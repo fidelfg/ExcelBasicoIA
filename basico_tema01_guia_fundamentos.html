@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 01 — Fundamentos de Excel y primer contacto con la IA</title>
+<meta name="description" content="Guía web del Tema 1 del curso Excel Básico con Inteligencia Artificial: entorno de Excel, movimiento y selección, tipos de dato, IA generativa y reglas de privacidad.">
+<style>
+:root {
+  --azul: #854209;
+  --azul-tx: #FFFFFF;
+  --inst-superficie: #854209;
+  --gris-tx: #3A3A3A;
+  --gris-suave: #616B67;
+  --info-bg: #F8DBBE;   --info-ac: #854209;
+  --exito-bg: #D9EADF; --exito-ac: #2E5940;
+  --alerta-bg: #F6E0DC; --alerta-ac: #B23A2E;
+  --captura-bg: #F5E9DC;
+  --formula-bg: #E4E1DC;
+  --formula-bg2: #C2BFBB;
+  --cab-tabla-bg: #854209; --cab-tabla-tx: #FFFFFF;
+  --rejilla-cab: #D4CEC4;
+  --borde: #C6C0B7;
+  --ficha-bg: #FAF7F2;
+  --papel: #FFFFFF;
+  --fondo: #ECEEED;
+  --f-titulo: "Segoe UI Semibold", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-cuerpo: Calibri, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+  --radio: 10px;
+  --escala: 1;
+}
+
+/* Modo oscuro: cambia el papel, NUNCA el código de color de la hoja de cálculo
+   (beige = quien practica escribe; gris = lo completa Excel), para no
+   romper el significado. */
+[data-tema="oscuro"] {
+  --papel: #1E1B18;
+  --fondo: #141210;
+  --gris-tx: #EAE6E0;
+  --gris-suave: #A7B0AB;
+  --azul: #E9A467;
+  --info-bg: #2E2318;
+  --exito-bg: #1B2A22;
+  --alerta-bg: #33201F;
+  --ficha-bg: #26221D;
+  --borde: #443E36;
+  --cab-tabla-bg: #6B3508;
+  --rejilla-cab: #433D34;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: calc(100% * var(--escala)); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--gris-tx);
+  font-family: var(--f-cuerpo);
+  font-size: 1.0rem;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+  background: rgba(133,66,9,.07);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  padding: .05em .35em;
+  /* NO "white-space: nowrap": una sintaxis de menú ("Inicio > Portapapeles >
+     Copiar formato") o un ejemplo largo de ficha_funcion se salen del
+     contenedor sin aviso -- no hacen scroll, se cortan visualmente contra el
+     borde de la tarjeta. Los tokens cortos (un nombre de función, "B2", una
+     clave de procedimiento) no tienen espacios, así que envolver no les
+     cambia el aspecto; solo protege a los que sí son largos. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+[data-tema="oscuro"] .mono { background: rgba(255,255,255,.08); }
+
+.sr-only {
+  position: absolute; left: -9999px; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 100;
+  background: var(--inst-superficie); color: #fff; padding: .6rem 1rem;
+}
+.saltar:focus { left: .5rem; top: .5rem; }
+
+:focus-visible { outline: 3px solid var(--exito-ac); outline-offset: 2px; }
+
+/* ---------- Barra de lectura ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  padding: .55rem 1rem;
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-titulo {
+  font-family: var(--f-titulo); font-weight: 700; color: var(--azul);
+  margin-right: auto; font-size: 0.92rem;
+}
+@media (max-width: 520px) {
+  .barra-titulo { flex: 1 1 100%; }
+}
+.barra button {
+  font-family: var(--f-cuerpo); font-size: 0.85rem;
+  color: var(--gris-tx); background: transparent;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .35rem .8rem; cursor: pointer; min-height: 2.2rem;
+}
+.barra button:hover { background: var(--info-bg); }
+
+/* El salto por ancla no queda pegado a la barra de lectura fija. */
+h2.seccion, section.puntos-clave, section.referencias, section.proc {
+  scroll-margin-top: 4.2rem;
+}
+
+/* ---------- Estructura ---------- */
+.envoltura {
+  max-width: 1180px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+  display: grid; gap: 1.6rem; grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .envoltura { grid-template-columns: 250px minmax(0, 1fr); }
+}
+
+/* ---------- Índice ---------- */
+.indice {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: .9rem 1rem;
+}
+@media (min-width: 1000px) {
+  .indice { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+}
+.indice h2 {
+  font-family: var(--f-titulo); font-size: 0.85rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gris-suave); margin: 0 0 .6rem;
+}
+.indice ol { list-style: none; margin: 0; padding: 0; }
+.indice li { margin: 0 0 .3rem; }
+.indice a {
+  display: block; color: var(--gris-tx); text-decoration: none;
+  font-size: 0.92rem; padding: .3rem .5rem; border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.indice a:hover, .indice a.activo {
+  background: var(--info-bg); border-left-color: var(--azul); color: var(--azul);
+}
+
+/* ---------- Documento ---------- */
+.documento {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 0 0 1.8rem;
+  min-width: 0;
+}
+.documento > *:not(.portada) { margin-left: 1.4rem; margin-right: 1.4rem; }
+@media (max-width: 520px) {
+  .documento > *:not(.portada) { margin-left: 1rem; margin-right: 1rem; }
+}
+.documento p { margin: 0 0 .75rem; }
+p, li, td, th { overflow-wrap: break-word; word-break: break-word; }
+
+/* ---------- Portada ---------- */
+.portada {
+  background: var(--inst-superficie); color: var(--azul-tx);
+  padding: 1.8rem 1.4rem; border-radius: var(--radio) var(--radio) 0 0;
+  margin-bottom: 1.3rem; border-bottom: 5px solid #D66A0F;
+}
+.portada-etiqueta {
+  font-family: var(--f-titulo); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: .1em; color: #F7D9BE; margin: 0 0 .35rem;
+}
+.portada-titulo {
+  font-family: var(--f-titulo); font-size: 1.9rem; line-height: 1.25;
+  margin: 0; color: #fff; font-weight: 700;
+}
+.portada-subtitulo {
+  font-size: 1.0rem; color: #FBE7D6; font-style: italic;
+  margin: .5rem 0 0;
+}
+[data-tema="oscuro"] .portada { background: #5A2D07; }
+
+/* ---------- Secciones ---------- */
+h2.seccion {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 1.7rem 1.4rem .7rem; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--rejilla-cab);
+  scroll-margin-top: 4.5rem;
+}
+
+/* ---------- Cajas de aviso ---------- */
+.aviso {
+  border-left: 5px solid var(--info-ac); border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--info-bg); padding: .85rem 1rem; margin: 0 1.4rem 1rem;
+}
+.aviso p { margin: 0; font-size: 0.92rem; }
+.aviso-etiqueta { font-family: var(--f-titulo); font-weight: 700; color: var(--info-ac); }
+.aviso--exito {
+  background: var(--exito-bg); border-left-color: var(--exito-ac);
+}
+.aviso--exito .aviso-etiqueta { color: var(--exito-ac); }
+.aviso--alerta {
+  background: var(--alerta-bg); border-left-color: var(--alerta-ac);
+  border-left-style: double; border-left-width: 7px;
+}
+.aviso--alerta .aviso-etiqueta { color: var(--alerta-ac); }
+[data-tema="oscuro"] .aviso--exito .aviso-etiqueta { color: #8FBFA0; }
+[data-tema="oscuro"] .aviso--alerta .aviso-etiqueta { color: #E8998C; }
+[data-tema="oscuro"] .aviso-etiqueta { color: #E9A467; }
+
+/* ---------- Listas ---------- */
+.lista { margin: 0 0 1rem; padding-left: 1.2rem; }
+.lista li { margin-bottom: .35rem; }
+
+/* ---------- Línea de fórmula ---------- */
+.linea-formula {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  /* Solo top y bottom, con !important para ganarle a ".documento p" (que es
+     más específico). El margin-left/right NO se toca aquí: debe heredar el
+     de ".documento > *:not(.portada)", o el bloque queda pegado al borde
+     mientras el resto del texto respeta la sangría. Ya pasó una vez: usar el
+     shorthand "margin: 0 0 .45rem !important" ponía left y right en 0 sin
+     querer, y el !important le ganaba a la regla de sangría aunque esta
+     viniera después en la hoja de estilos. */
+  margin-top: 0 !important;
+  margin-bottom: .45rem !important;
+}
+.formula-celda {
+  font-family: var(--f-mono); font-weight: 700; color: var(--azul);
+  min-width: 2.6rem;
+}
+.formula-texto { white-space: normal; word-break: break-word; }
+.formula-explica { color: var(--gris-suave); font-size: 0.92rem; }
+
+/* ---------- Tabla de conceptos ---------- */
+.tabla-envoltura { margin-bottom: 1.1rem; }
+.tabla-conceptos {
+  width: 100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.tabla-conceptos th {
+  background: var(--cab-tabla-bg); color: var(--cab-tabla-tx);
+  font-family: var(--f-titulo); font-weight: 700;
+  padding: .55rem .7rem; border: 1px solid var(--borde);
+}
+.tabla-conceptos td {
+  padding: .5rem .7rem; border: 1px solid var(--borde); vertical-align: top;
+}
+.tabla-conceptos .col-izq { text-align: left; }
+.tabla-conceptos .col-der { text-align: right; }
+.tabla-conceptos .fila-total td { font-weight: 700; }
+
+/* En móvil la tabla se apila y cada celda muestra su encabezado. */
+@media (max-width: 640px) {
+  .tabla-conceptos thead { display: none; }
+  .tabla-conceptos, .tabla-conceptos tbody, .tabla-conceptos tr, .tabla-conceptos td {
+    display: block; width: 100%;
+  }
+  .tabla-conceptos tr {
+    border: 1px solid var(--borde); border-radius: 8px;
+    margin-bottom: .7rem; overflow: visible;
+  }
+  .tabla-conceptos td { border: 0; border-bottom: 1px solid var(--borde); text-align: left !important; }
+  .tabla-conceptos tr td:last-child { border-bottom: 0; }
+  .tabla-conceptos td::before {
+    content: attr(data-rotulo);
+    display: block; font-family: var(--f-titulo); font-weight: 700;
+    font-size: 0.85rem; color: var(--gris-suave); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: .15rem;
+  }
+}
+
+/* ---------- Rejilla de Excel ---------- */
+.rejilla-envoltura {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde); border-radius: 8px; margin-bottom: .8rem;
+}
+.rejilla { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+.rejilla th {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+  padding: .4rem .6rem; border: 1px solid var(--borde);
+}
+.rejilla .cab-fila { width: 2.2rem; }
+.rejilla .esquina { width: 2.2rem; }
+.rejilla td {
+  padding: .45rem .7rem; border: 1px solid var(--borde);
+  background: var(--papel); white-space: nowrap;
+}
+.rejilla td.cab-dato {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+}
+.rejilla .col-izq { text-align: left; }
+.rejilla .col-der { text-align: right; }
+.rejilla .captura { background: var(--captura-bg); color: #3A3A3A; }
+.rejilla .formula { background: var(--formula-bg); color: #3A3A3A; font-family: var(--f-mono); }
+
+/* ---------- Leyenda de colores ---------- */
+.leyenda {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  padding: 0; margin: 0 0 1.1rem; font-size: 0.92rem; color: var(--gris-suave);
+}
+.leyenda li { display: flex; align-items: center; gap: .45rem; }
+.muestra {
+  width: 1.05rem; height: 1.05rem; border-radius: 4px;
+  border: 1px solid var(--borde); display: inline-block; flex: none;
+}
+
+/* ---------- Fichas de función ---------- */
+.ficha {
+  background: var(--ficha-bg); border-left: 4px solid var(--azul);
+  border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: .8rem;
+}
+.ficha-nombre {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+  margin: 0 0 .5rem; font-size: 1.0rem;
+}
+.ficha-nombre .mono { color: var(--azul); font-weight: 700; }
+.ficha-guion { color: var(--gris-suave); }
+.ficha-quehace {
+  font-family: var(--f-cuerpo); font-weight: 400; font-size: 0.92rem;
+  color: var(--gris-tx);
+}
+.ficha-linea { margin: 0 0 .3rem !important; font-size: 0.92rem; }
+.ficha-rotulo { font-weight: 700; color: var(--gris-suave); }
+.ficha-ejemplos { list-style: none; margin: .2rem 0 .4rem; padding-left: .9rem; }
+.ficha-ejemplos li { margin-bottom: .25rem; }
+.ficha-ejemplos li::before { content: "– "; color: var(--gris-suave); }
+
+/* ---------- Procedimientos (ayuda al desempeño) ---------- */
+.proc {
+  border-radius: var(--radio); overflow: hidden; margin: 1.1rem 0 1.4rem;
+  border-left: 4px solid var(--azul); background: var(--ficha-bg);
+  scroll-margin-top: 4.5rem;
+}
+.proc-cab { background: var(--inst-superficie); padding: .8rem 1rem .85rem; }
+.proc-clave { margin: 0 0 .15rem; }
+.proc-clave .mono {
+  color: #F7D9BE; font-size: 0.85rem; font-weight: 700; letter-spacing: .04em;
+}
+.proc-titulo {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.18rem;
+  color: var(--azul-tx); line-height: 1.3;
+}
+.proc-paraque {
+  margin: .3rem 0 0 !important; font-size: 0.92rem; color: #FBE7D6;
+}
+.proc-cuerpo { padding: .8rem 1rem .9rem; }
+.proc-rotulo {
+  margin: .75rem 0 .25rem !important; font-family: var(--f-titulo);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gris-suave);
+}
+.proc-cuerpo .proc-rotulo:first-child, .proc-bloque .proc-rotulo { margin-top: 0 !important; }
+.proc-rotulo--ok { color: var(--exito-ac); }
+.proc-rotulo--falla { color: var(--alerta-ac); }
+.proc-texto { margin: 0 !important; font-size: 0.92rem; }
+.proc .ui, .proc-pasos .ui { font-weight: 700; color: var(--azul); }
+.proc-cab .ui { color: var(--azul-tx); }
+.proc-figura { margin: .7rem 0 .2rem; text-align: center; }
+.proc-figura img {
+  max-width: 100%; height: auto; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--papel);
+}
+.proc-figura figcaption {
+  margin-top: .3rem; font-size: 0.85rem; color: var(--gris-suave);
+  font-style: italic;
+}
+[data-tema="oscuro"] .proc .ui { color: #E9A467; }
+.proc-pasos {
+  margin: .2rem 0 0; padding-left: 0; list-style: none; counter-reset: paso;
+}
+.proc-pasos li {
+  counter-increment: paso; position: relative; padding-left: 2rem;
+  margin-bottom: .4rem; font-size: 0.92rem;
+}
+.proc-pasos li::before {
+  content: counter(paso); position: absolute; left: 0; top: .05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--inst-superficie); color: var(--azul-tx);
+  font-family: var(--f-mono); font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.proc-atajo { margin: .1rem 0 0 !important; }
+.proc-atajo kbd {
+  font-family: var(--f-mono); font-size: 0.95rem;
+  background: var(--papel); border: 1px solid var(--borde);
+  border-bottom-width: 2px; border-radius: 6px; padding: .12rem .5rem;
+  color: var(--gris-tx);
+}
+.proc-bloque { padding: .7rem 1rem; border-top: 1px solid var(--borde); }
+.proc-ok { background: var(--exito-bg); border-left: 5px solid var(--exito-ac); }
+.proc-falla {
+  background: var(--alerta-bg); border-left: 7px double var(--alerta-ac);
+}
+.proc-errores { margin: .25rem 0 0; padding-left: 1.1rem; }
+.proc-errores li { margin-bottom: .3rem; font-size: 0.92rem; }
+.proc-errores li::marker { color: var(--alerta-ac); }
+.proc-nota {
+  margin: 0 !important; padding: .55rem 1rem .7rem;
+  font-size: 0.85rem; color: var(--gris-suave);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 480px) {
+  .proc-cab, .proc-cuerpo, .proc-bloque, .proc-nota { padding-left: .8rem; padding-right: .8rem; }
+}
+
+/* ---------- Puntos clave y referencias ---------- */
+.puntos-clave {
+  background: var(--info-bg); border: 1px solid var(--rejilla-cab);
+  border-radius: var(--radio); padding: 1rem 1.2rem; margin-top: 1.8rem;
+  scroll-margin-top: 4.5rem;
+}
+.puntos-clave h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem;
+}
+.puntos-clave ul { margin: 0; padding-left: 1.2rem; }
+.puntos-clave li { margin-bottom: .4rem; }
+
+.referencias { margin-top: 1.8rem; scroll-margin-top: 4.5rem; }
+.referencias h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--rejilla-cab);
+}
+.referencias ul { list-style: none; margin: 0; padding: 0; }
+.referencias li {
+  font-size: 0.85rem; color: var(--gris-suave);
+  padding-left: 1.2rem; text-indent: -1.2rem; margin-bottom: .5rem;
+}
+
+/* ---------- Pie ---------- */
+.pie {
+  max-width: 1180px; margin: 0 auto; padding: 0 1rem 2rem;
+  font-size: 0.85rem; color: var(--gris-suave); text-align: center;
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  body { background: #fff; }
+  .barra, .indice, .saltar { display: none !important; }
+  .envoltura { display: block; max-width: none; padding: 0; }
+  .documento { border: 0; }
+  /* Cohesion al paginar. Un titulo nunca queda solo al pie, y una tabla
+     repite su encabezado al cambiar de pagina. */
+  .ficha, .aviso, .puntos-clave, .rejilla-envoltura, .proc, tr,
+  figure, blockquote { break-inside: avoid; }
+
+  h1, h2, h3, h4, h5, h6,
+  .proc > :first-child, figcaption { break-after: avoid; }
+
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+
+  p { orphans: 3; widows: 3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="saltar" href="#documento">Ir al contenido</a>
+<div class="barra" role="toolbar" aria-label="Opciones de lectura"><span class="barra-titulo">Tema 01 — Fundamentos de Excel y primer contacto con la IA</span><button type="button" id="texto-menos" aria-label="Reducir el tamaño del texto">A−</button><button type="button" id="texto-mas" aria-label="Aumentar el tamaño del texto">A+</button><button type="button" id="cambiar-tema" aria-pressed="false">Modo oscuro</button></div>
+<div class="envoltura">
+<nav class="indice" aria-label="Contenido de la guía"><h2>Contenido</h2><ol><li><a href="#s-1-el-entorno-de-excel-libro-hoja-celda-y-rango">1. El entorno de Excel: libro, hoja, celda y rango</a></li><li><a href="#s-2-movimiento-y-seleccion">2. Movimiento y selección</a></li><li><a href="#s-3-los-tres-tipos-de-dato-texto-numero-y-fecha">3. Los tres tipos de dato: texto, número y fecha</a></li><li><a href="#s-4-que-es-la-ia-generativa-y-en-que-se-diferencia-de-un-buscador">4. Qué es la IA generativa y en qué se diferencia de un buscador</a></li><li><a href="#s-5-privacidad-que-datos-no-se-pegan-en-una-ia">5. Privacidad: qué datos NO se pegan en una IA</a></li><li><a href="#s-6-fichas-de-los-elementos-del-entorno">6. Fichas de los elementos del entorno</a></li><li><a href="#s-7-ejemplo-resuelto-mi-primer-inventario">7. Ejemplo resuelto: Mi Primer Inventario</a></li><li><a href="#s-puntos-clave">Puntos clave</a></li><li><a href="#s-referencias">Referencias</a></li></ol></nav>
+<main class="documento" id="documento" tabindex="-1">
+<header class="portada">
+<p class="portada-etiqueta">EXCEL BÁSICO CON IA · PRÁCTICA GUIADA</p>
+<h1 class="portada-titulo">Tema 01 — Fundamentos de Excel y primer contacto con la IA</h1>
+<p class="portada-subtitulo">Reconocer el entorno de Excel (libro, hoja, celda y rango), capturar con precisión los tres tipos de dato y usar la IA generativa con reglas claras de privacidad.</p>
+</header>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">En breve.</span> En esta guía conocerás el entorno de Excel: libro, hoja, celda, rango, cinta de opciones y barra de fórmulas. Aprenderás a moverte y a seleccionar con el teclado, a capturar texto, número y fecha y a distinguirlos por su alineación. También verás qué es la IA generativa, en qué se diferencia de un buscador y qué datos nunca debes pegarle. Al terminar, capturarás tu primer inventario y lo compararás con la respuesta de una IA.</p></aside>
+<h2 class="seccion" id="s-1-el-entorno-de-excel-libro-hoja-celda-y-rango" tabindex="-1">1. El entorno de Excel: libro, hoja, celda y rango</h2>
+<p>Excel guarda tu trabajo en un <strong>libro</strong>, que es como un cuaderno: puede tener muchas <strong>hojas</strong> y cada hoja es como una página cuadriculada. La intersección de una columna (A, B, C…) y una fila (1, 2, 3…) es una <strong>celda</strong>, como un cajón con dirección: <strong>B2</strong> es la celda de la columna B, fila 2. Un <strong>rango</strong> es un grupo de celdas contiguas, por ejemplo <strong>B2:B6</strong>. Arriba están la <strong>cinta de opciones</strong>, con las pestañas Inicio, Insertar y Datos, y la <strong>barra de fórmulas</strong>, donde Excel muestra lo que contiene la celda activa.</p>
+<h2 class="seccion" id="s-2-movimiento-y-seleccion" tabindex="-1">2. Movimiento y selección</h2>
+<p>Para moverte entre celdas usa las <strong>teclas de flecha</strong>. La combinación <strong>Ctrl + flecha</strong> salta hasta el último dato de la fila o la columna, útil para llegar al final de una lista de golpe. Para seleccionar un rango, mantén presionada la tecla <strong>Shift</strong> y pulsa las flechas: Excel marca todas las celdas que recorres. También puedes seleccionar filas y columnas completas pulsando su letra o su número en el borde de la hoja.</p>
+<h2 class="seccion" id="s-3-los-tres-tipos-de-dato-texto-numero-y-fecha" tabindex="-1">3. Los tres tipos de dato: texto, número y fecha</h2>
+<p>Excel reconoce tres tipos de dato básicos. El <strong>texto</strong> (palabras, códigos, nombres) se alinea a la izquierda. El <strong>número</strong> y la <strong>fecha</strong> se alinean a la derecha. Esa alineación automática es una pista: si un dato que debía ser número quedó a la izquierda, probablemente entró como texto, por ejemplo al copiarlo de otro programa.</p>
+<h2 class="seccion" id="s-4-que-es-la-ia-generativa-y-en-que-se-diferencia-de-un-buscador" tabindex="-1">4. Qué es la IA generativa y en qué se diferencia de un buscador</h2>
+<p>La <strong>IA generativa</strong> (por ejemplo ChatGPT, Copilot en Excel o Gemini) redacta una respuesta nueva a partir de lo que le pides: una lista de columnas, una fórmula o un texto. Un <strong>buscador</strong> solo encuentra páginas que ya existen. La IA puede equivocarse, por eso todo lo que te devuelva se revisa antes de usarlo.</p>
+<h2 class="seccion" id="s-5-privacidad-que-datos-no-se-pegan-en-una-ia" tabindex="-1">5. Privacidad: qué datos NO se pegan en una IA</h2>
+<p>La regla es simple: <strong>no pegues en una IA lo que no enseñarías</strong>. No se comparten datos confidenciales, personales o internos: nombres y correos reales, salarios, clientes, claves o información de la empresa. Para practicar se usan siempre <strong>datos ficticios</strong>, como los de este curso.</p>
+<h2 class="seccion" id="s-6-fichas-de-los-elementos-del-entorno" tabindex="-1">6. Fichas de los elementos del entorno</h2>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Cinta de opciones</code><span class="ficha-guion">—</span><span class="ficha-quehace">La banda superior con las pestañas y botones de Excel.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Pestañas: Inicio, Insertar, Datos, Fórmulas…</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Inicio guarda los botones de formato y alineación.</code></li><li><code class="mono">Insertar agrega tablas, gráficos e imágenes.</code></li><li><code class="mono">Datos contiene Ordenar, Filtrar y Texto en Columnas.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para encontrar la herramienta que necesitas, primero elige la pestaña.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Barra de fórmulas</code><span class="ficha-guion">—</span><span class="ficha-quehace">La barra que muestra y edita el contenido real de la celda activa.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Barra sobre la hoja, junto al cuadro de nombre.</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Selecciona B2 y la barra muestra su contenido.</code></li><li><code class="mono">Una fecha se ve como 03/02/2026 en la celda y como 46056 en la barra si cambia el formato.</code></li><li><code class="mono">Ahí se escribe o corrige una fórmula larga con comodidad.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para revisar qué valor real guarda una celda, no solo lo que se ve.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Celda y rango</code><span class="ficha-guion">—</span><span class="ficha-quehace">La celda es la unidad de la hoja y el rango, un grupo de celdas.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Celda: columna + fila (B2). Rango: B2:B6.</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">B2 apunta a la columna B, fila 2.</code></li><li><code class="mono">B2:B6 agrupa cinco celdas de la columna B.</code></li><li><code class="mono">Seleccionar A1:D4 marca dieciséis celdas en bloque.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para referirte con precisión a un dato o a un grupo de datos.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Texto</code><span class="ficha-guion">—</span><span class="ficha-quehace">Palabras, códigos o etiquetas; se alinea a la izquierda.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Captura directa, por ejemplo P-001 o Silla ejecutiva.</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">P-001 es texto aunque contenga números.</code></li><li><code class="mono">Silla ejecutiva queda alineada a la izquierda.</code></li><li><code class="mono">Un código con ceros, como P-001, conserva el cero al ser texto.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para nombres, códigos y cualquier dato que no se calcula.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Número</code><span class="ficha-guion">—</span><span class="ficha-quehace">Cantidades que Excel puede sumar o comparar; se alinean a la derecha.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Captura directa, por ejemplo 12 o 5.</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">12 se alinea a la derecha como número.</code></li><li><code class="mono">Excel puede usar 5 y 8 en cálculos porque son números.</code></li><li><code class="mono">Si una cantidad queda a la izquierda, entró como texto y no se calculará.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para cantidades, importes y valores que participan en cálculos.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Fecha</code><span class="ficha-guion">—</span><span class="ficha-quehace">Un día en el calendario de Excel; se alinea a la derecha.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">dd/mm/aaaa, por ejemplo 03/02/2026.</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">03/02/2026 es una fecha real, no texto.</code></li><li><code class="mono">Al quitar el formato de fecha aparece un número de serie.</code></li><li><code class="mono">Con formato General, 03/02/2026 puede verse como 46056.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para registrar días y después calcular con fechas.</p>
+</article>
+<h2 class="seccion" id="s-7-ejemplo-resuelto-mi-primer-inventario" tabindex="-1">7. Ejemplo resuelto: Mi Primer Inventario</h2>
+<p>Captura el inventario de abajo en una hoja nueva: en <strong>A1</strong> escribe <strong>Código</strong>, en <strong>B1</strong> <strong>Artículo</strong>, en <strong>C1</strong> <strong>Cantidad</strong> y en <strong>D1</strong> <strong>Fecha de compra</strong>. Las tres filas de datos van en las filas 2 a 4.</p>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th><th scope="col" class="cab-col">C</th><th scope="col" class="cab-col">D</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Código</strong></td><td class="celda cab-dato"><strong>Artículo</strong></td><td class="celda cab-dato"><strong>Cantidad</strong></td><td class="celda cab-dato"><strong>Fecha de compra</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>P-001</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Silla ejecutiva</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>12</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>03/02/2026</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>P-002</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Escritorio</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>5</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>03/02/2026</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>P-003</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Archivero</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>8</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>04/02/2026</td></tr></tbody></table></div>
+<p>Qué observar: <strong>P-001</strong> es texto aunque contiene números, y por eso queda a la izquierda; <strong>12</strong> es número y <strong>03/02/2026</strong> es fecha: ambos quedan a la derecha. Para comprobarlo, cambia el formato de la fecha a General: si el valor se vuelve un número de serie, la fecha entró como fecha y no como texto. El código conserva el cero y el guion porque se capturó como texto.</p>
+<aside class="aviso aviso--exito" role="note"><p><span class="aviso-etiqueta">Comprobación.</span> En tu archivo, la celda de fecha debe conservar un valor de fecha, no texto: al cambiar su formato a General puede mostrarse como número de serie. El código P-001 conserva el cero y el guion. En el archivo de práctica, la hoja Captura_Practica trae capturadas las dos primeras filas y deja la tercera por capturar.</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Con ayuda de la IA (T-A-R-F).</span> Prompt de ejemplo: &quot;Tarea: propón cinco columnas útiles para un inventario de oficina. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que explica con pasos sencillos. Formato: tabla breve con el nombre de la columna y un ejemplo con datos ficticios. Antes de usar la respuesta, verifica que las columnas propuestas sirvan para tu caso y compara las ideas con lo que ya capturaste en Mi Primer Inventario.&quot;</p></aside>
+<aside class="aviso aviso--alerta" role="note"><p><span class="aviso-etiqueta">Advertencia.</span> Nunca pegues en una IA datos confidenciales, personales o internos. Usa siempre datos ficticios para practicar y verifica la respuesta antes de usarla: la IA puede sugerir columnas, fórmulas o datos que no corresponden a tu caso.</p></aside>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Tipo de dato</th><th scope="col" class="col-izq">Cómo se alinea</th><th scope="col" class="col-izq">Ejemplo</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Tipo de dato">Texto</td><td class="col-izq" data-rotulo="Cómo se alinea">Izquierda</td><td class="col-izq" data-rotulo="Ejemplo">Silla ejecutiva</td></tr><tr><td class="col-izq" data-rotulo="Tipo de dato">Número</td><td class="col-izq" data-rotulo="Cómo se alinea">Derecha</td><td class="col-izq" data-rotulo="Ejemplo">12</td></tr><tr><td class="col-izq" data-rotulo="Tipo de dato">Fecha</td><td class="col-izq" data-rotulo="Cómo se alinea">Derecha</td><td class="col-izq" data-rotulo="Ejemplo">03/02/2026</td></tr></tbody></table></div>
+<section class="puntos-clave" id="s-puntos-clave" tabindex="-1"><h2>Puntos clave</h2><ul><li>La dirección de una celda es columna + fila: B2, D4…</li><li>La alineación revela el tipo de dato: texto a la izquierda, número y fecha a la derecha.</li><li>La IA generativa redacta respuestas nuevas; no es un buscador.</li><li>Nunca pegues datos confidenciales en una IA: practica con datos ficticios.</li></ul></section>
+<section class="referencias" id="s-referencias" tabindex="-1"><h2>Referencias</h2><ul><li>Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li>OpenAI. (2025). ChatGPT [Modelo de lenguaje grande]. https://chat.openai.com</li></ul></section>
+</main>
+</div>
+<footer class="pie">Excel Básico con Inteligencia Artificial · Datos ficticios para práctica.</footer>
+<script>
+(function () {
+  var raiz = document.documentElement;
+  var escala = 1;
+
+  function aplicarEscala() {
+    raiz.style.setProperty('--escala', escala);
+  }
+  var bMas = document.getElementById('texto-mas');
+  var bMenos = document.getElementById('texto-menos');
+  var bTema = document.getElementById('cambiar-tema');
+
+  if (bMas) bMas.addEventListener('click', function () {
+    escala = Math.min(1.5, escala + 0.1); aplicarEscala();
+  });
+  if (bMenos) bMenos.addEventListener('click', function () {
+    escala = Math.max(0.85, escala - 0.1); aplicarEscala();
+  });
+  if (bTema) bTema.addEventListener('click', function () {
+    var oscuro = raiz.getAttribute('data-tema') === 'oscuro';
+    raiz.setAttribute('data-tema', oscuro ? 'claro' : 'oscuro');
+    bTema.setAttribute('aria-pressed', String(!oscuro));
+    bTema.textContent = oscuro ? 'Modo oscuro' : 'Modo claro';
+  });
+
+  // Resalta en el índice la sección visible.
+  var enlaces = Array.prototype.slice.call(
+    document.querySelectorAll('.indice a')
+  );
+  var destinos = enlaces
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if ('IntersectionObserver' in window && destinos.length) {
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        enlaces.forEach(function (a) {
+          a.classList.toggle(
+            'activo', a.getAttribute('href') === '#' + e.target.id
+          );
+        });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    destinos.forEach(function (d) { obs.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>
