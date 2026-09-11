@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 04 — Funciones básicas y referencias absolutas</title>
+<meta name="description" content="Guía web del Tema 4 del curso Excel Básico con Inteligencia Artificial: SUMA, PROMEDIO, CONTAR, MAX, MIN, AutoSuma y referencias absolutas con la tecla F4.">
+<style>
+:root {
+  --azul: #854209;
+  --azul-tx: #FFFFFF;
+  --inst-superficie: #854209;
+  --gris-tx: #3A3A3A;
+  --gris-suave: #616B67;
+  --info-bg: #F8DBBE;   --info-ac: #854209;
+  --exito-bg: #D9EADF; --exito-ac: #2E5940;
+  --alerta-bg: #F6E0DC; --alerta-ac: #B23A2E;
+  --captura-bg: #F5E9DC;
+  --formula-bg: #E4E1DC;
+  --formula-bg2: #C2BFBB;
+  --cab-tabla-bg: #854209; --cab-tabla-tx: #FFFFFF;
+  --rejilla-cab: #D4CEC4;
+  --borde: #C6C0B7;
+  --ficha-bg: #FAF7F2;
+  --papel: #FFFFFF;
+  --fondo: #ECEEED;
+  --f-titulo: "Segoe UI Semibold", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-cuerpo: Calibri, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+  --radio: 10px;
+  --escala: 1;
+}
+
+/* Modo oscuro: cambia el papel, NUNCA el código de color de la hoja de cálculo
+   (beige = quien practica escribe; gris = lo completa Excel), para no
+   romper el significado. */
+[data-tema="oscuro"] {
+  --papel: #1E1B18;
+  --fondo: #141210;
+  --gris-tx: #EAE6E0;
+  --gris-suave: #A7B0AB;
+  --azul: #E9A467;
+  --info-bg: #2E2318;
+  --exito-bg: #1B2A22;
+  --alerta-bg: #33201F;
+  --ficha-bg: #26221D;
+  --borde: #443E36;
+  --cab-tabla-bg: #6B3508;
+  --rejilla-cab: #433D34;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: calc(100% * var(--escala)); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--gris-tx);
+  font-family: var(--f-cuerpo);
+  font-size: 1.0rem;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+  background: rgba(133,66,9,.07);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  padding: .05em .35em;
+  /* NO "white-space: nowrap": una sintaxis de menú ("Inicio > Portapapeles >
+     Copiar formato") o un ejemplo largo de ficha_funcion se salen del
+     contenedor sin aviso -- no hacen scroll, se cortan visualmente contra el
+     borde de la tarjeta. Los tokens cortos (un nombre de función, "B2", una
+     clave de procedimiento) no tienen espacios, así que envolver no les
+     cambia el aspecto; solo protege a los que sí son largos. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+[data-tema="oscuro"] .mono { background: rgba(255,255,255,.08); }
+
+.sr-only {
+  position: absolute; left: -9999px; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 100;
+  background: var(--inst-superficie); color: #fff; padding: .6rem 1rem;
+}
+.saltar:focus { left: .5rem; top: .5rem; }
+
+:focus-visible { outline: 3px solid var(--exito-ac); outline-offset: 2px; }
+
+/* ---------- Barra de lectura ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  padding: .55rem 1rem;
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-titulo {
+  font-family: var(--f-titulo); font-weight: 700; color: var(--azul);
+  margin-right: auto; font-size: 0.92rem;
+}
+@media (max-width: 520px) {
+  .barra-titulo { flex: 1 1 100%; }
+}
+.barra button {
+  font-family: var(--f-cuerpo); font-size: 0.85rem;
+  color: var(--gris-tx); background: transparent;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .35rem .8rem; cursor: pointer; min-height: 2.2rem;
+}
+.barra button:hover { background: var(--info-bg); }
+
+/* El salto por ancla no queda pegado a la barra de lectura fija. */
+h2.seccion, section.puntos-clave, section.referencias, section.proc {
+  scroll-margin-top: 4.2rem;
+}
+
+/* ---------- Estructura ---------- */
+.envoltura {
+  max-width: 1180px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+  display: grid; gap: 1.6rem; grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .envoltura { grid-template-columns: 250px minmax(0, 1fr); }
+}
+
+/* ---------- Índice ---------- */
+.indice {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: .9rem 1rem;
+}
+@media (min-width: 1000px) {
+  .indice { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+}
+.indice h2 {
+  font-family: var(--f-titulo); font-size: 0.85rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gris-suave); margin: 0 0 .6rem;
+}
+.indice ol { list-style: none; margin: 0; padding: 0; }
+.indice li { margin: 0 0 .3rem; }
+.indice a {
+  display: block; color: var(--gris-tx); text-decoration: none;
+  font-size: 0.92rem; padding: .3rem .5rem; border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.indice a:hover, .indice a.activo {
+  background: var(--info-bg); border-left-color: var(--azul); color: var(--azul);
+}
+
+/* ---------- Documento ---------- */
+.documento {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 0 0 1.8rem;
+  min-width: 0;
+}
+.documento > *:not(.portada) { margin-left: 1.4rem; margin-right: 1.4rem; }
+@media (max-width: 520px) {
+  .documento > *:not(.portada) { margin-left: 1rem; margin-right: 1rem; }
+}
+.documento p { margin: 0 0 .75rem; }
+p, li, td, th { overflow-wrap: break-word; word-break: break-word; }
+
+/* ---------- Portada ---------- */
+.portada {
+  background: var(--inst-superficie); color: var(--azul-tx);
+  padding: 1.8rem 1.4rem; border-radius: var(--radio) var(--radio) 0 0;
+  margin-bottom: 1.3rem; border-bottom: 5px solid #D66A0F;
+}
+.portada-etiqueta {
+  font-family: var(--f-titulo); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: .1em; color: #F7D9BE; margin: 0 0 .35rem;
+}
+.portada-titulo {
+  font-family: var(--f-titulo); font-size: 1.9rem; line-height: 1.25;
+  margin: 0; color: #fff; font-weight: 700;
+}
+.portada-subtitulo {
+  font-size: 1.0rem; color: #FBE7D6; font-style: italic;
+  margin: .5rem 0 0;
+}
+[data-tema="oscuro"] .portada { background: #5A2D07; }
+
+/* ---------- Secciones ---------- */
+h2.seccion {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 1.7rem 1.4rem .7rem; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--rejilla-cab);
+  scroll-margin-top: 4.5rem;
+}
+
+/* ---------- Cajas de aviso ---------- */
+.aviso {
+  border-left: 5px solid var(--info-ac); border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--info-bg); padding: .85rem 1rem; margin: 0 1.4rem 1rem;
+}
+.aviso p { margin: 0; font-size: 0.92rem; }
+.aviso-etiqueta { font-family: var(--f-titulo); font-weight: 700; color: var(--info-ac); }
+.aviso--exito {
+  background: var(--exito-bg); border-left-color: var(--exito-ac);
+}
+.aviso--exito .aviso-etiqueta { color: var(--exito-ac); }
+.aviso--alerta {
+  background: var(--alerta-bg); border-left-color: var(--alerta-ac);
+  border-left-style: double; border-left-width: 7px;
+}
+.aviso--alerta .aviso-etiqueta { color: var(--alerta-ac); }
+[data-tema="oscuro"] .aviso--exito .aviso-etiqueta { color: #8FBFA0; }
+[data-tema="oscuro"] .aviso--alerta .aviso-etiqueta { color: #E8998C; }
+[data-tema="oscuro"] .aviso-etiqueta { color: #E9A467; }
+
+/* ---------- Listas ---------- */
+.lista { margin: 0 0 1rem; padding-left: 1.2rem; }
+.lista li { margin-bottom: .35rem; }
+
+/* ---------- Línea de fórmula ---------- */
+.linea-formula {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  /* Solo top y bottom, con !important para ganarle a ".documento p" (que es
+     más específico). El margin-left/right NO se toca aquí: debe heredar el
+     de ".documento > *:not(.portada)", o el bloque queda pegado al borde
+     mientras el resto del texto respeta la sangría. Ya pasó una vez: usar el
+     shorthand "margin: 0 0 .45rem !important" ponía left y right en 0 sin
+     querer, y el !important le ganaba a la regla de sangría aunque esta
+     viniera después en la hoja de estilos. */
+  margin-top: 0 !important;
+  margin-bottom: .45rem !important;
+}
+.formula-celda {
+  font-family: var(--f-mono); font-weight: 700; color: var(--azul);
+  min-width: 2.6rem;
+}
+.formula-texto { white-space: normal; word-break: break-word; }
+.formula-explica { color: var(--gris-suave); font-size: 0.92rem; }
+
+/* ---------- Tabla de conceptos ---------- */
+.tabla-envoltura { margin-bottom: 1.1rem; }
+.tabla-conceptos {
+  width: 100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.tabla-conceptos th {
+  background: var(--cab-tabla-bg); color: var(--cab-tabla-tx);
+  font-family: var(--f-titulo); font-weight: 700;
+  padding: .55rem .7rem; border: 1px solid var(--borde);
+}
+.tabla-conceptos td {
+  padding: .5rem .7rem; border: 1px solid var(--borde); vertical-align: top;
+}
+.tabla-conceptos .col-izq { text-align: left; }
+.tabla-conceptos .col-der { text-align: right; }
+.tabla-conceptos .fila-total td { font-weight: 700; }
+
+/* En móvil la tabla se apila y cada celda muestra su encabezado. */
+@media (max-width: 640px) {
+  .tabla-conceptos thead { display: none; }
+  .tabla-conceptos, .tabla-conceptos tbody, .tabla-conceptos tr, .tabla-conceptos td {
+    display: block; width: 100%;
+  }
+  .tabla-conceptos tr {
+    border: 1px solid var(--borde); border-radius: 8px;
+    margin-bottom: .7rem; overflow: visible;
+  }
+  .tabla-conceptos td { border: 0; border-bottom: 1px solid var(--borde); text-align: left !important; }
+  .tabla-conceptos tr td:last-child { border-bottom: 0; }
+  .tabla-conceptos td::before {
+    content: attr(data-rotulo);
+    display: block; font-family: var(--f-titulo); font-weight: 700;
+    font-size: 0.85rem; color: var(--gris-suave); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: .15rem;
+  }
+}
+
+/* ---------- Rejilla de Excel ---------- */
+.rejilla-envoltura {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde); border-radius: 8px; margin-bottom: .8rem;
+}
+.rejilla { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+.rejilla th {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+  padding: .4rem .6rem; border: 1px solid var(--borde);
+}
+.rejilla .cab-fila { width: 2.2rem; }
+.rejilla .esquina { width: 2.2rem; }
+.rejilla td {
+  padding: .45rem .7rem; border: 1px solid var(--borde);
+  background: var(--papel); white-space: nowrap;
+}
+.rejilla td.cab-dato {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+}
+.rejilla .col-izq { text-align: left; }
+.rejilla .col-der { text-align: right; }
+.rejilla .captura { background: var(--captura-bg); color: #3A3A3A; }
+.rejilla .formula { background: var(--formula-bg); color: #3A3A3A; font-family: var(--f-mono); }
+
+/* ---------- Leyenda de colores ---------- */
+.leyenda {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  padding: 0; margin: 0 0 1.1rem; font-size: 0.92rem; color: var(--gris-suave);
+}
+.leyenda li { display: flex; align-items: center; gap: .45rem; }
+.muestra {
+  width: 1.05rem; height: 1.05rem; border-radius: 4px;
+  border: 1px solid var(--borde); display: inline-block; flex: none;
+}
+
+/* ---------- Fichas de función ---------- */
+.ficha {
+  background: var(--ficha-bg); border-left: 4px solid var(--azul);
+  border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: .8rem;
+}
+.ficha-nombre {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+  margin: 0 0 .5rem; font-size: 1.0rem;
+}
+.ficha-nombre .mono { color: var(--azul); font-weight: 700; }
+.ficha-guion { color: var(--gris-suave); }
+.ficha-quehace {
+  font-family: var(--f-cuerpo); font-weight: 400; font-size: 0.92rem;
+  color: var(--gris-tx);
+}
+.ficha-linea { margin: 0 0 .3rem !important; font-size: 0.92rem; }
+.ficha-rotulo { font-weight: 700; color: var(--gris-suave); }
+.ficha-ejemplos { list-style: none; margin: .2rem 0 .4rem; padding-left: .9rem; }
+.ficha-ejemplos li { margin-bottom: .25rem; }
+.ficha-ejemplos li::before { content: "– "; color: var(--gris-suave); }
+
+/* ---------- Procedimientos (ayuda al desempeño) ---------- */
+.proc {
+  border-radius: var(--radio); overflow: hidden; margin: 1.1rem 0 1.4rem;
+  border-left: 4px solid var(--azul); background: var(--ficha-bg);
+  scroll-margin-top: 4.5rem;
+}
+.proc-cab { background: var(--inst-superficie); padding: .8rem 1rem .85rem; }
+.proc-clave { margin: 0 0 .15rem; }
+.proc-clave .mono {
+  color: #F7D9BE; font-size: 0.85rem; font-weight: 700; letter-spacing: .04em;
+}
+.proc-titulo {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.18rem;
+  color: var(--azul-tx); line-height: 1.3;
+}
+.proc-paraque {
+  margin: .3rem 0 0 !important; font-size: 0.92rem; color: #FBE7D6;
+}
+.proc-cuerpo { padding: .8rem 1rem .9rem; }
+.proc-rotulo {
+  margin: .75rem 0 .25rem !important; font-family: var(--f-titulo);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gris-suave);
+}
+.proc-cuerpo .proc-rotulo:first-child, .proc-bloque .proc-rotulo { margin-top: 0 !important; }
+.proc-rotulo--ok { color: var(--exito-ac); }
+.proc-rotulo--falla { color: var(--alerta-ac); }
+.proc-texto { margin: 0 !important; font-size: 0.92rem; }
+.proc .ui, .proc-pasos .ui { font-weight: 700; color: var(--azul); }
+.proc-cab .ui { color: var(--azul-tx); }
+.proc-figura { margin: .7rem 0 .2rem; text-align: center; }
+.proc-figura img {
+  max-width: 100%; height: auto; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--papel);
+}
+.proc-figura figcaption {
+  margin-top: .3rem; font-size: 0.85rem; color: var(--gris-suave);
+  font-style: italic;
+}
+[data-tema="oscuro"] .proc .ui { color: #E9A467; }
+.proc-pasos {
+  margin: .2rem 0 0; padding-left: 0; list-style: none; counter-reset: paso;
+}
+.proc-pasos li {
+  counter-increment: paso; position: relative; padding-left: 2rem;
+  margin-bottom: .4rem; font-size: 0.92rem;
+}
+.proc-pasos li::before {
+  content: counter(paso); position: absolute; left: 0; top: .05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--inst-superficie); color: var(--azul-tx);
+  font-family: var(--f-mono); font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.proc-atajo { margin: .1rem 0 0 !important; }
+.proc-atajo kbd {
+  font-family: var(--f-mono); font-size: 0.95rem;
+  background: var(--papel); border: 1px solid var(--borde);
+  border-bottom-width: 2px; border-radius: 6px; padding: .12rem .5rem;
+  color: var(--gris-tx);
+}
+.proc-bloque { padding: .7rem 1rem; border-top: 1px solid var(--borde); }
+.proc-ok { background: var(--exito-bg); border-left: 5px solid var(--exito-ac); }
+.proc-falla {
+  background: var(--alerta-bg); border-left: 7px double var(--alerta-ac);
+}
+.proc-errores { margin: .25rem 0 0; padding-left: 1.1rem; }
+.proc-errores li { margin-bottom: .3rem; font-size: 0.92rem; }
+.proc-errores li::marker { color: var(--alerta-ac); }
+.proc-nota {
+  margin: 0 !important; padding: .55rem 1rem .7rem;
+  font-size: 0.85rem; color: var(--gris-suave);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 480px) {
+  .proc-cab, .proc-cuerpo, .proc-bloque, .proc-nota { padding-left: .8rem; padding-right: .8rem; }
+}
+
+/* ---------- Puntos clave y referencias ---------- */
+.puntos-clave {
+  background: var(--info-bg); border: 1px solid var(--rejilla-cab);
+  border-radius: var(--radio); padding: 1rem 1.2rem; margin-top: 1.8rem;
+  scroll-margin-top: 4.5rem;
+}
+.puntos-clave h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem;
+}
+.puntos-clave ul { margin: 0; padding-left: 1.2rem; }
+.puntos-clave li { margin-bottom: .4rem; }
+
+.referencias { margin-top: 1.8rem; scroll-margin-top: 4.5rem; }
+.referencias h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--rejilla-cab);
+}
+.referencias ul { list-style: none; margin: 0; padding: 0; }
+.referencias li {
+  font-size: 0.85rem; color: var(--gris-suave);
+  padding-left: 1.2rem; text-indent: -1.2rem; margin-bottom: .5rem;
+}
+
+/* ---------- Pie ---------- */
+.pie {
+  max-width: 1180px; margin: 0 auto; padding: 0 1rem 2rem;
+  font-size: 0.85rem; color: var(--gris-suave); text-align: center;
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  body { background: #fff; }
+  .barra, .indice, .saltar { display: none !important; }
+  .envoltura { display: block; max-width: none; padding: 0; }
+  .documento { border: 0; }
+  /* Cohesion al paginar. Un titulo nunca queda solo al pie, y una tabla
+     repite su encabezado al cambiar de pagina. */
+  .ficha, .aviso, .puntos-clave, .rejilla-envoltura, .proc, tr,
+  figure, blockquote { break-inside: avoid; }
+
+  h1, h2, h3, h4, h5, h6,
+  .proc > :first-child, figcaption { break-after: avoid; }
+
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+
+  p { orphans: 3; widows: 3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="saltar" href="#documento">Ir al contenido</a>
+<div class="barra" role="toolbar" aria-label="Opciones de lectura"><span class="barra-titulo">Tema 04 — Funciones básicas y referencias absolutas</span><button type="button" id="texto-menos" aria-label="Reducir el tamaño del texto">A−</button><button type="button" id="texto-mas" aria-label="Aumentar el tamaño del texto">A+</button><button type="button" id="cambiar-tema" aria-pressed="false">Modo oscuro</button></div>
+<div class="envoltura">
+<nav class="indice" aria-label="Contenido de la guía"><h2>Contenido</h2><ol><li><a href="#s-1-que-es-una-funcion-y-que-es-una-referencia">1. Qué es una función y qué es una referencia</a></li><li><a href="#s-2-las-cinco-funciones-basicas-y-autosuma">2. Las cinco funciones básicas y AutoSuma</a></li><li><a href="#s-3-referencias-relativas-y-absolutas-a-1-y-f4">3. Referencias relativas y absolutas ($A$1 y F4)</a></li><li><a href="#s-4-usar-la-ia-para-elegir-funciones-y-entender-el-ancla">4. Usar la IA para elegir funciones y entender el ancla</a></li><li><a href="#s-5-ejemplo-resuelto-reporte-de-gastos">5. Ejemplo resuelto: Reporte de Gastos</a></li><li><a href="#s-6-ejemplo-resuelto-calculo-de-iva-con-celda-anclada">6. Ejemplo resuelto: Cálculo de IVA con celda anclada</a></li><li><a href="#s-puntos-clave">Puntos clave</a></li><li><a href="#s-referencias">Referencias</a></li></ol></nav>
+<main class="documento" id="documento" tabindex="-1">
+<header class="portada">
+<p class="portada-etiqueta">EXCEL BÁSICO CON IA · PRÁCTICA GUIADA</p>
+<h1 class="portada-titulo">Tema 04 — Funciones básicas y referencias absolutas</h1>
+<p class="portada-subtitulo">Resumir gastos con SUMA, PROMEDIO, CONTAR, MAX y MIN, y fijar una tasa con la referencia absoluta ($A$1) y la tecla F4.</p>
+</header>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">En breve.</span> Una función es una fórmula ya construida a la que solo le das un rango. En esta guía usarás las cinco funciones básicas para resumir gastos, aplicarás AutoSuma como atajo y aprenderás a anclar una celda con el signo $ y la tecla F4. Al terminar podrás calcular el total, el promedio, el mayor y el menor de una columna, y calcular el IVA de varios precios con una sola tasa fija.</p></aside>
+<h2 class="seccion" id="s-1-que-es-una-funcion-y-que-es-una-referencia" tabindex="-1">1. Qué es una función y qué es una referencia</h2>
+<p>Una <strong>fórmula</strong> empieza con = y Excel la calcula sola. Una <strong>función</strong> es una fórmula ya construida a la que solo le das un rango (por ejemplo, <strong>=SUMA(B2:B13)</strong>). Las referencias indican qué celdas usa: <strong>B2</strong> es una celda y <strong>B2:B6</strong> un rango.</p>
+<h2 class="seccion" id="s-2-las-cinco-funciones-basicas-y-autosuma" tabindex="-1">2. Las cinco funciones básicas y AutoSuma</h2>
+<p><strong>SUMA</strong> suma números; <strong>PROMEDIO</strong> calcula el valor medio; <strong>CONTAR</strong> cuenta números; <strong>MAX</strong> da el mayor y <strong>MIN</strong> el menor. Cada una se explica en su ficha. <strong>AutoSuma</strong> es el atajo para sumar el rango contiguo: pulsa <strong>Inicio &gt; AutoSuma (Σ)</strong>, revisa el rango propuesto y acepta.</p>
+<h2 class="seccion" id="s-3-referencias-relativas-y-absolutas-a-1-y-f4" tabindex="-1">3. Referencias relativas y absolutas ($A$1 y F4)</h2>
+<p>Una <strong>referencia relativa</strong> (A1) se ajusta sola al copiar: =B2*1.6 pasa a =B3*1.6. Una <strong>referencia absoluta</strong> ($A$1) fija la celda con $ para que no se mueva; es como clavar la celda. La tecla <strong>F4</strong> alterna <strong>B2</strong> → <strong>$B$2</strong> → <strong>B$2</strong> → <strong>$B2</strong>. Aquí el ancla fija la tasa de IVA.</p>
+<h2 class="seccion" id="s-4-usar-la-ia-para-elegir-funciones-y-entender-el-ancla" tabindex="-1">4. Usar la IA para elegir funciones y entender el ancla</h2>
+<p>La IA generativa puede decirte qué función usar y explicarte el signo $. Pídele la respuesta con la estructura T-A-R-F (Tarea, Audiencia, Rol, Formato) y verifica siempre la función sugerida contra un caso que ya conozcas.</p>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">SUMA</code><span class="ficha-guion">—</span><span class="ficha-quehace">Suma los números de un rango o de una lista.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=SUMA(rango)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=SUMA(B2:B6) → $10,349.50</code></li><li><code class="mono">=SUMA(B2:B3) → $9,250.50</code></li><li><code class="mono">=SUMA(100, 50) → 150</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para totales de columnas o rangos de números.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">PROMEDIO</code><span class="ficha-guion">—</span><span class="ficha-quehace">Calcula el valor medio de un grupo de números.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=PROMEDIO(rango)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=PROMEDIO(B2:B6) → $2,069.90</code></li><li><code class="mono">=PROMEDIO(B2:B3) → $4,625.25</code></li><li><code class="mono">=PROMEDIO(10, 20, 30) → 20</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para conocer el valor típico de un grupo.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">CONTAR</code><span class="ficha-guion">—</span><span class="ficha-quehace">Cuenta cuántas celdas del rango contienen números.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=CONTAR(rango)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=CONTAR(B2:B6) → 5</code></li><li><code class="mono">=CONTAR(B2:B3) → 2</code></li><li><code class="mono">=CONTAR(A1:A10) → 7 (solo números)</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para saber cuántos registros numéricos hay.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">MAX</code><span class="ficha-guion">—</span><span class="ficha-quehace">Devuelve el valor más grande del rango.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=MAX(rango)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=MAX(B2:B6) → $8,000.00</code></li><li><code class="mono">=MAX(B2:B3) → $8,000.00</code></li><li><code class="mono">=MAX(5, 9, 3) → 9</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para identificar el importe mayor.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">MIN</code><span class="ficha-guion">—</span><span class="ficha-quehace">Devuelve el valor más pequeño del rango.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=MIN(rango)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=MIN(B2:B6) → $180.00</code></li><li><code class="mono">=MIN(B2:B3) → $1,250.50</code></li><li><code class="mono">=MIN(5, 9, 3) → 3</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para identificar el importe menor.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">AutoSuma</code><span class="ficha-guion">—</span><span class="ficha-quehace">Inserta la suma del rango contiguo con un clic.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Inicio &gt; AutoSuma (Σ)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Selecciona B7 y pulsa AutoSuma → =SUMA(B2:B6)</code></li><li><code class="mono">AutoSuma propone el rango contiguo que detecta</code></li><li><code class="mono">Revisa el rango propuesto antes de aceptar</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para sumar rápido una columna o una fila.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Referencia absoluta ($A$1 con F4)</code><span class="ficha-guion">—</span><span class="ficha-quehace">Fija una celda con el signo $ para que no se mueva al copiar.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">$A$1 (tecla F4)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=B2*$F$1 → $1,280.00 (F1 fija la tasa de 16 %)</code></li><li><code class="mono">F4 cambia B2 → $B$2 → B$2 → $B2</code></li><li><code class="mono">Sin el ancla, =B2*F1 se desplaza a =B3*F2 al copiar</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para anclar impuestos, tasas o comisiones.</p>
+</article>
+<h2 class="seccion" id="s-5-ejemplo-resuelto-reporte-de-gastos" tabindex="-1">5. Ejemplo resuelto: Reporte de Gastos</h2>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes. — aquí, con una fórmula.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Concepto</strong></td><td class="celda cab-dato"><strong>Monto</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda col-izq">Renta</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$8,000.00</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda col-izq">Luz</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$1,250.50</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda col-izq">Internet</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$599.00</td></tr><tr><th scope="row" class="cab-fila">5</th><td class="celda col-izq">Papelería</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$320.00</td></tr><tr><th scope="row" class="cab-fila">6</th><td class="celda col-izq">Café</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$180.00</td></tr></tbody></table></div>
+<p class="linea-formula"><span class="formula-celda">B7</span><code class="mono formula-texto">=SUMA(B2:B6)</code><span class="formula-explica">→ $10,349.50</span></p>
+<p class="linea-formula"><span class="formula-celda">B8</span><code class="mono formula-texto">=PROMEDIO(B2:B6)</code><span class="formula-explica">→ $2,069.90</span></p>
+<p class="linea-formula"><span class="formula-celda">B9</span><code class="mono formula-texto">=CONTAR(B2:B6)</code><span class="formula-explica">→ 5</span></p>
+<p class="linea-formula"><span class="formula-celda">B10</span><code class="mono formula-texto">=MAX(B2:B6)</code><span class="formula-explica">→ $8,000.00</span></p>
+<p class="linea-formula"><span class="formula-celda">B11</span><code class="mono formula-texto">=MIN(B2:B6)</code><span class="formula-explica">→ $180.00</span></p>
+<aside class="aviso aviso--exito" role="note"><p><span class="aviso-etiqueta">Comprobación.</span> Total $10,349.50 · Promedio $2,069.90 · Contar 5 · Mayor $8,000.00 · Menor $180.00. En el archivo de práctica, la comprobación equivalente sobre las cinco filas ancla es =SUMA(Gastos!E2:E6).</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Nota.</span> La columna se llama Monto, igual que en la hoja Gastos del archivo de práctica. Allí esos cinco conceptos son las filas ancla y Monto ocupa la columna E, porque la tabla completa incluye Fecha, Categoria y Departamento.</p></aside>
+<h2 class="seccion" id="s-6-ejemplo-resuelto-calculo-de-iva-con-celda-anclada" tabindex="-1">6. Ejemplo resuelto: Cálculo de IVA con celda anclada</h2>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes. — aquí, con una fórmula.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th><th scope="col" class="cab-col">C</th><th scope="col" class="cab-col">D</th><th scope="col" class="cab-col">E</th><th scope="col" class="cab-col">F</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Concepto</strong></td><td class="celda cab-dato"><strong>Monto sin IVA</strong></td><td class="celda cab-dato"><strong>IVA</strong></td><td class="celda cab-dato"><strong>Monto con IVA</strong></td><td class="celda cab-dato"><strong></strong></td><td class="celda cab-dato"><strong>16%</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda col-izq">Renta</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$8,000.00</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$1,280.00</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$9,280.00</td><td class="celda col-izq"></td><td class="celda col-izq"></td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda col-izq">Luz</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$1,250.50</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$200.08</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$1,450.58</td><td class="celda col-izq"></td><td class="celda col-izq"></td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda col-izq">Internet</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$599.00</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$95.84</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$694.84</td><td class="celda col-izq"></td><td class="celda col-izq"></td></tr></tbody></table></div>
+<p class="linea-formula"><span class="formula-celda">C2</span><code class="mono formula-texto">=B2*$F$1</code><span class="formula-explica">→ $1,280.00</span></p>
+<p class="linea-formula"><span class="formula-celda">D2</span><code class="mono formula-texto">=B2+C2</code><span class="formula-explica">→ $9,280.00</span></p>
+<p class="linea-formula"><span class="formula-celda">C3</span><code class="mono formula-texto">=B3*$F$1</code><span class="formula-explica">→ $200.08</span></p>
+<p class="linea-formula"><span class="formula-celda">D3</span><code class="mono formula-texto">=B3+C3</code><span class="formula-explica">→ $1,450.58</span></p>
+<p class="linea-formula"><span class="formula-celda">C4</span><code class="mono formula-texto">=B4*$F$1</code><span class="formula-explica">→ $95.84</span></p>
+<p class="linea-formula"><span class="formula-celda">D4</span><code class="mono formula-texto">=B4+C4</code><span class="formula-explica">→ $694.84</span></p>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Nota.</span> Las tres filas son los tres primeros gastos del ejemplo anterior: la tasa se ancla a montos que ya conoces. En esta vista web, el módulo pinta la fila 1 como banda de encabezados, así que la tasa 16 % que tú capturas se ve en gris dentro de esa banda; en la guía impresa esa celda va en beige. En el archivo de práctica la tasa NO está en F1: la hoja Gastos llega hasta la columna E, la etiqueta ocupa F1 y el valor G1, con el rango con nombre rng_Tasa_IVA. Lo que coincide es el patrón, no la letra: =B2*$F$1 aquí equivale a =E2*$G$1 en el archivo. Si cambias la tasa en la celda anclada, todos los cálculos se actualizan.</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Con ayuda de la IA (T-A-R-F).</span> Prompt: &quot;Tarea: indica qué función de Excel suma un rango de celdas y muestra su sintaxis. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que explica con pasos sencillos. Formato: nombre de la función, sintaxis, un ejemplo con datos ficticios y el resultado esperado. Antes de usar la respuesta, verifica que la función coincida con =SUMA(rng_Monto) y que el total de los cinco gastos de la guía sea $10,349.50.&quot;</p></aside>
+<aside class="aviso aviso--alerta" role="note"><p><span class="aviso-etiqueta">Advertencia.</span> Verifica siempre la función o fórmula que sugiere la IA antes de usarla: una función equivocada propaga el error a todo el reporte.</p></aside>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Función</th><th scope="col" class="col-izq">Para qué sirve</th><th scope="col" class="col-izq">Ejemplo</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Función">SUMA</td><td class="col-izq" data-rotulo="Para qué sirve">Suma los números del rango</td><td class="col-izq" data-rotulo="Ejemplo">=SUMA(B2:B6)</td></tr><tr><td class="col-izq" data-rotulo="Función">PROMEDIO</td><td class="col-izq" data-rotulo="Para qué sirve">Calcula el valor medio</td><td class="col-izq" data-rotulo="Ejemplo">=PROMEDIO(B2:B6)</td></tr><tr><td class="col-izq" data-rotulo="Función">CONTAR</td><td class="col-izq" data-rotulo="Para qué sirve">Cuenta cuántos números hay</td><td class="col-izq" data-rotulo="Ejemplo">=CONTAR(B2:B6)</td></tr><tr><td class="col-izq" data-rotulo="Función">MAX</td><td class="col-izq" data-rotulo="Para qué sirve">Devuelve el mayor</td><td class="col-izq" data-rotulo="Ejemplo">=MAX(B2:B6)</td></tr><tr><td class="col-izq" data-rotulo="Función">MIN</td><td class="col-izq" data-rotulo="Para qué sirve">Devuelve el menor</td><td class="col-izq" data-rotulo="Ejemplo">=MIN(B2:B6)</td></tr></tbody></table></div>
+<section class="puntos-clave" id="s-puntos-clave" tabindex="-1"><h2>Puntos clave</h2><ul><li>Una función resume un rango: SUMA, PROMEDIO, CONTAR, MAX y MIN.</li><li>El signo $ fija (ancla) una celda con la tecla F4.</li><li>Anclar la tasa permite cambiarla en un solo lugar.</li><li>Verifica la función que sugiere la IA antes de usarla.</li></ul></section>
+<section class="referencias" id="s-referencias" tabindex="-1"><h2>Referencias</h2><ul><li>Microsoft. (2025). Cambiar entre referencias relativas, absolutas y mixtas. Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/cambiar-entre-referencias-relativas-absolutas-y-mixtas-dfec08cd-ae65-4f56-839e-5f0d8d0baca9</li><li>Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li>Microsoft. (2025). Funciones estadísticas (referencia). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-estad%C3%ADsticas-referencia-624dac86-a375-4435-bc25-76d659719ffd</li><li>OpenAI. (2025). ChatGPT [Modelo de lenguaje grande]. https://chat.openai.com</li></ul></section>
+</main>
+</div>
+<footer class="pie">Excel Básico con Inteligencia Artificial · Datos ficticios para práctica.</footer>
+<script>
+(function () {
+  var raiz = document.documentElement;
+  var escala = 1;
+
+  function aplicarEscala() {
+    raiz.style.setProperty('--escala', escala);
+  }
+  var bMas = document.getElementById('texto-mas');
+  var bMenos = document.getElementById('texto-menos');
+  var bTema = document.getElementById('cambiar-tema');
+
+  if (bMas) bMas.addEventListener('click', function () {
+    escala = Math.min(1.5, escala + 0.1); aplicarEscala();
+  });
+  if (bMenos) bMenos.addEventListener('click', function () {
+    escala = Math.max(0.85, escala - 0.1); aplicarEscala();
+  });
+  if (bTema) bTema.addEventListener('click', function () {
+    var oscuro = raiz.getAttribute('data-tema') === 'oscuro';
+    raiz.setAttribute('data-tema', oscuro ? 'claro' : 'oscuro');
+    bTema.setAttribute('aria-pressed', String(!oscuro));
+    bTema.textContent = oscuro ? 'Modo oscuro' : 'Modo claro';
+  });
+
+  // Resalta en el índice la sección visible.
+  var enlaces = Array.prototype.slice.call(
+    document.querySelectorAll('.indice a')
+  );
+  var destinos = enlaces
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if ('IntersectionObserver' in window && destinos.length) {
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        enlaces.forEach(function (a) {
+          a.classList.toggle(
+            'activo', a.getAttribute('href') === '#' + e.target.id
+          );
+        });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    destinos.forEach(function (d) { obs.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>
