@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 06 — Eficiencia: copiar, rellenar y datos de práctica con IA</title>
+<meta name="description" content="Guía web del Tema 6 del curso Excel Básico con Inteligencia Artificial: copiar formato, Pegado especial, Relleno Rápido, series y datos ficticios con IA.">
+<style>
+:root {
+  --azul: #854209;
+  --azul-tx: #FFFFFF;
+  --inst-superficie: #854209;
+  --gris-tx: #3A3A3A;
+  --gris-suave: #616B67;
+  --info-bg: #F8DBBE;   --info-ac: #854209;
+  --exito-bg: #D9EADF; --exito-ac: #2E5940;
+  --alerta-bg: #F6E0DC; --alerta-ac: #B23A2E;
+  --captura-bg: #F5E9DC;
+  --formula-bg: #E4E1DC;
+  --formula-bg2: #C2BFBB;
+  --cab-tabla-bg: #854209; --cab-tabla-tx: #FFFFFF;
+  --rejilla-cab: #D4CEC4;
+  --borde: #C6C0B7;
+  --ficha-bg: #FAF7F2;
+  --papel: #FFFFFF;
+  --fondo: #ECEEED;
+  --f-titulo: "Segoe UI Semibold", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-cuerpo: Calibri, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+  --radio: 10px;
+  --escala: 1;
+}
+
+/* Modo oscuro: cambia el papel, NUNCA el código de color de la hoja de cálculo
+   (beige = quien practica escribe; gris = lo completa Excel), para no
+   romper el significado. */
+[data-tema="oscuro"] {
+  --papel: #1E1B18;
+  --fondo: #141210;
+  --gris-tx: #EAE6E0;
+  --gris-suave: #A7B0AB;
+  --azul: #E9A467;
+  --info-bg: #2E2318;
+  --exito-bg: #1B2A22;
+  --alerta-bg: #33201F;
+  --ficha-bg: #26221D;
+  --borde: #443E36;
+  --cab-tabla-bg: #6B3508;
+  --rejilla-cab: #433D34;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: calc(100% * var(--escala)); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--gris-tx);
+  font-family: var(--f-cuerpo);
+  font-size: 1.0rem;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+  background: rgba(133,66,9,.07);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  padding: .05em .35em;
+  /* NO "white-space: nowrap": una sintaxis de menú ("Inicio > Portapapeles >
+     Copiar formato") o un ejemplo largo de ficha_funcion se salen del
+     contenedor sin aviso -- no hacen scroll, se cortan visualmente contra el
+     borde de la tarjeta. Los tokens cortos (un nombre de función, "B2", una
+     clave de procedimiento) no tienen espacios, así que envolver no les
+     cambia el aspecto; solo protege a los que sí son largos. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+[data-tema="oscuro"] .mono { background: rgba(255,255,255,.08); }
+
+.sr-only {
+  position: absolute; left: -9999px; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 100;
+  background: var(--inst-superficie); color: #fff; padding: .6rem 1rem;
+}
+.saltar:focus { left: .5rem; top: .5rem; }
+
+:focus-visible { outline: 3px solid var(--exito-ac); outline-offset: 2px; }
+
+/* ---------- Barra de lectura ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  padding: .55rem 1rem;
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-titulo {
+  font-family: var(--f-titulo); font-weight: 700; color: var(--azul);
+  margin-right: auto; font-size: 0.92rem;
+}
+@media (max-width: 520px) {
+  .barra-titulo { flex: 1 1 100%; }
+}
+.barra button {
+  font-family: var(--f-cuerpo); font-size: 0.85rem;
+  color: var(--gris-tx); background: transparent;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .35rem .8rem; cursor: pointer; min-height: 2.2rem;
+}
+.barra button:hover { background: var(--info-bg); }
+
+/* El salto por ancla no queda pegado a la barra de lectura fija. */
+h2.seccion, section.puntos-clave, section.referencias, section.proc {
+  scroll-margin-top: 4.2rem;
+}
+
+/* ---------- Estructura ---------- */
+.envoltura {
+  max-width: 1180px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+  display: grid; gap: 1.6rem; grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .envoltura { grid-template-columns: 250px minmax(0, 1fr); }
+}
+
+/* ---------- Índice ---------- */
+.indice {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: .9rem 1rem;
+}
+@media (min-width: 1000px) {
+  .indice { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+}
+.indice h2 {
+  font-family: var(--f-titulo); font-size: 0.85rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gris-suave); margin: 0 0 .6rem;
+}
+.indice ol { list-style: none; margin: 0; padding: 0; }
+.indice li { margin: 0 0 .3rem; }
+.indice a {
+  display: block; color: var(--gris-tx); text-decoration: none;
+  font-size: 0.92rem; padding: .3rem .5rem; border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.indice a:hover, .indice a.activo {
+  background: var(--info-bg); border-left-color: var(--azul); color: var(--azul);
+}
+
+/* ---------- Documento ---------- */
+.documento {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 0 0 1.8rem;
+  min-width: 0;
+}
+.documento > *:not(.portada) { margin-left: 1.4rem; margin-right: 1.4rem; }
+@media (max-width: 520px) {
+  .documento > *:not(.portada) { margin-left: 1rem; margin-right: 1rem; }
+}
+.documento p { margin: 0 0 .75rem; }
+p, li, td, th { overflow-wrap: break-word; word-break: break-word; }
+
+/* ---------- Portada ---------- */
+.portada {
+  background: var(--inst-superficie); color: var(--azul-tx);
+  padding: 1.8rem 1.4rem; border-radius: var(--radio) var(--radio) 0 0;
+  margin-bottom: 1.3rem; border-bottom: 5px solid #D66A0F;
+}
+.portada-etiqueta {
+  font-family: var(--f-titulo); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: .1em; color: #F7D9BE; margin: 0 0 .35rem;
+}
+.portada-titulo {
+  font-family: var(--f-titulo); font-size: 1.9rem; line-height: 1.25;
+  margin: 0; color: #fff; font-weight: 700;
+}
+.portada-subtitulo {
+  font-size: 1.0rem; color: #FBE7D6; font-style: italic;
+  margin: .5rem 0 0;
+}
+[data-tema="oscuro"] .portada { background: #5A2D07; }
+
+/* ---------- Secciones ---------- */
+h2.seccion {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 1.7rem 1.4rem .7rem; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--rejilla-cab);
+  scroll-margin-top: 4.5rem;
+}
+
+/* ---------- Cajas de aviso ---------- */
+.aviso {
+  border-left: 5px solid var(--info-ac); border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--info-bg); padding: .85rem 1rem; margin: 0 1.4rem 1rem;
+}
+.aviso p { margin: 0; font-size: 0.92rem; }
+.aviso-etiqueta { font-family: var(--f-titulo); font-weight: 700; color: var(--info-ac); }
+.aviso--exito {
+  background: var(--exito-bg); border-left-color: var(--exito-ac);
+}
+.aviso--exito .aviso-etiqueta { color: var(--exito-ac); }
+.aviso--alerta {
+  background: var(--alerta-bg); border-left-color: var(--alerta-ac);
+  border-left-style: double; border-left-width: 7px;
+}
+.aviso--alerta .aviso-etiqueta { color: var(--alerta-ac); }
+[data-tema="oscuro"] .aviso--exito .aviso-etiqueta { color: #8FBFA0; }
+[data-tema="oscuro"] .aviso--alerta .aviso-etiqueta { color: #E8998C; }
+[data-tema="oscuro"] .aviso-etiqueta { color: #E9A467; }
+
+/* ---------- Listas ---------- */
+.lista { margin: 0 0 1rem; padding-left: 1.2rem; }
+.lista li { margin-bottom: .35rem; }
+
+/* ---------- Línea de fórmula ---------- */
+.linea-formula {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  /* Solo top y bottom, con !important para ganarle a ".documento p" (que es
+     más específico). El margin-left/right NO se toca aquí: debe heredar el
+     de ".documento > *:not(.portada)", o el bloque queda pegado al borde
+     mientras el resto del texto respeta la sangría. Ya pasó una vez: usar el
+     shorthand "margin: 0 0 .45rem !important" ponía left y right en 0 sin
+     querer, y el !important le ganaba a la regla de sangría aunque esta
+     viniera después en la hoja de estilos. */
+  margin-top: 0 !important;
+  margin-bottom: .45rem !important;
+}
+.formula-celda {
+  font-family: var(--f-mono); font-weight: 700; color: var(--azul);
+  min-width: 2.6rem;
+}
+.formula-texto { white-space: normal; word-break: break-word; }
+.formula-explica { color: var(--gris-suave); font-size: 0.92rem; }
+
+/* ---------- Tabla de conceptos ---------- */
+.tabla-envoltura { margin-bottom: 1.1rem; }
+.tabla-conceptos {
+  width: 100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.tabla-conceptos th {
+  background: var(--cab-tabla-bg); color: var(--cab-tabla-tx);
+  font-family: var(--f-titulo); font-weight: 700;
+  padding: .55rem .7rem; border: 1px solid var(--borde);
+}
+.tabla-conceptos td {
+  padding: .5rem .7rem; border: 1px solid var(--borde); vertical-align: top;
+}
+.tabla-conceptos .col-izq { text-align: left; }
+.tabla-conceptos .col-der { text-align: right; }
+.tabla-conceptos .fila-total td { font-weight: 700; }
+
+/* En móvil la tabla se apila y cada celda muestra su encabezado. */
+@media (max-width: 640px) {
+  .tabla-conceptos thead { display: none; }
+  .tabla-conceptos, .tabla-conceptos tbody, .tabla-conceptos tr, .tabla-conceptos td {
+    display: block; width: 100%;
+  }
+  .tabla-conceptos tr {
+    border: 1px solid var(--borde); border-radius: 8px;
+    margin-bottom: .7rem; overflow: visible;
+  }
+  .tabla-conceptos td { border: 0; border-bottom: 1px solid var(--borde); text-align: left !important; }
+  .tabla-conceptos tr td:last-child { border-bottom: 0; }
+  .tabla-conceptos td::before {
+    content: attr(data-rotulo);
+    display: block; font-family: var(--f-titulo); font-weight: 700;
+    font-size: 0.85rem; color: var(--gris-suave); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: .15rem;
+  }
+}
+
+/* ---------- Rejilla de Excel ---------- */
+.rejilla-envoltura {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde); border-radius: 8px; margin-bottom: .8rem;
+}
+.rejilla { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+.rejilla th {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+  padding: .4rem .6rem; border: 1px solid var(--borde);
+}
+.rejilla .cab-fila { width: 2.2rem; }
+.rejilla .esquina { width: 2.2rem; }
+.rejilla td {
+  padding: .45rem .7rem; border: 1px solid var(--borde);
+  background: var(--papel); white-space: nowrap;
+}
+.rejilla td.cab-dato {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+}
+.rejilla .col-izq { text-align: left; }
+.rejilla .col-der { text-align: right; }
+.rejilla .captura { background: var(--captura-bg); color: #3A3A3A; }
+.rejilla .formula { background: var(--formula-bg); color: #3A3A3A; font-family: var(--f-mono); }
+
+/* ---------- Leyenda de colores ---------- */
+.leyenda {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  padding: 0; margin: 0 0 1.1rem; font-size: 0.92rem; color: var(--gris-suave);
+}
+.leyenda li { display: flex; align-items: center; gap: .45rem; }
+.muestra {
+  width: 1.05rem; height: 1.05rem; border-radius: 4px;
+  border: 1px solid var(--borde); display: inline-block; flex: none;
+}
+
+/* ---------- Fichas de función ---------- */
+.ficha {
+  background: var(--ficha-bg); border-left: 4px solid var(--azul);
+  border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: .8rem;
+}
+.ficha-nombre {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+  margin: 0 0 .5rem; font-size: 1.0rem;
+}
+.ficha-nombre .mono { color: var(--azul); font-weight: 700; }
+.ficha-guion { color: var(--gris-suave); }
+.ficha-quehace {
+  font-family: var(--f-cuerpo); font-weight: 400; font-size: 0.92rem;
+  color: var(--gris-tx);
+}
+.ficha-linea { margin: 0 0 .3rem !important; font-size: 0.92rem; }
+.ficha-rotulo { font-weight: 700; color: var(--gris-suave); }
+.ficha-ejemplos { list-style: none; margin: .2rem 0 .4rem; padding-left: .9rem; }
+.ficha-ejemplos li { margin-bottom: .25rem; }
+.ficha-ejemplos li::before { content: "– "; color: var(--gris-suave); }
+
+/* ---------- Procedimientos (ayuda al desempeño) ---------- */
+.proc {
+  border-radius: var(--radio); overflow: hidden; margin: 1.1rem 0 1.4rem;
+  border-left: 4px solid var(--azul); background: var(--ficha-bg);
+  scroll-margin-top: 4.5rem;
+}
+.proc-cab { background: var(--inst-superficie); padding: .8rem 1rem .85rem; }
+.proc-clave { margin: 0 0 .15rem; }
+.proc-clave .mono {
+  color: #F7D9BE; font-size: 0.85rem; font-weight: 700; letter-spacing: .04em;
+}
+.proc-titulo {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.18rem;
+  color: var(--azul-tx); line-height: 1.3;
+}
+.proc-paraque {
+  margin: .3rem 0 0 !important; font-size: 0.92rem; color: #FBE7D6;
+}
+.proc-cuerpo { padding: .8rem 1rem .9rem; }
+.proc-rotulo {
+  margin: .75rem 0 .25rem !important; font-family: var(--f-titulo);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gris-suave);
+}
+.proc-cuerpo .proc-rotulo:first-child, .proc-bloque .proc-rotulo { margin-top: 0 !important; }
+.proc-rotulo--ok { color: var(--exito-ac); }
+.proc-rotulo--falla { color: var(--alerta-ac); }
+.proc-texto { margin: 0 !important; font-size: 0.92rem; }
+.proc .ui, .proc-pasos .ui { font-weight: 700; color: var(--azul); }
+.proc-cab .ui { color: var(--azul-tx); }
+.proc-figura { margin: .7rem 0 .2rem; text-align: center; }
+.proc-figura img {
+  max-width: 100%; height: auto; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--papel);
+}
+.proc-figura figcaption {
+  margin-top: .3rem; font-size: 0.85rem; color: var(--gris-suave);
+  font-style: italic;
+}
+[data-tema="oscuro"] .proc .ui { color: #E9A467; }
+.proc-pasos {
+  margin: .2rem 0 0; padding-left: 0; list-style: none; counter-reset: paso;
+}
+.proc-pasos li {
+  counter-increment: paso; position: relative; padding-left: 2rem;
+  margin-bottom: .4rem; font-size: 0.92rem;
+}
+.proc-pasos li::before {
+  content: counter(paso); position: absolute; left: 0; top: .05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--inst-superficie); color: var(--azul-tx);
+  font-family: var(--f-mono); font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.proc-atajo { margin: .1rem 0 0 !important; }
+.proc-atajo kbd {
+  font-family: var(--f-mono); font-size: 0.95rem;
+  background: var(--papel); border: 1px solid var(--borde);
+  border-bottom-width: 2px; border-radius: 6px; padding: .12rem .5rem;
+  color: var(--gris-tx);
+}
+.proc-bloque { padding: .7rem 1rem; border-top: 1px solid var(--borde); }
+.proc-ok { background: var(--exito-bg); border-left: 5px solid var(--exito-ac); }
+.proc-falla {
+  background: var(--alerta-bg); border-left: 7px double var(--alerta-ac);
+}
+.proc-errores { margin: .25rem 0 0; padding-left: 1.1rem; }
+.proc-errores li { margin-bottom: .3rem; font-size: 0.92rem; }
+.proc-errores li::marker { color: var(--alerta-ac); }
+.proc-nota {
+  margin: 0 !important; padding: .55rem 1rem .7rem;
+  font-size: 0.85rem; color: var(--gris-suave);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 480px) {
+  .proc-cab, .proc-cuerpo, .proc-bloque, .proc-nota { padding-left: .8rem; padding-right: .8rem; }
+}
+
+/* ---------- Puntos clave y referencias ---------- */
+.puntos-clave {
+  background: var(--info-bg); border: 1px solid var(--rejilla-cab);
+  border-radius: var(--radio); padding: 1rem 1.2rem; margin-top: 1.8rem;
+  scroll-margin-top: 4.5rem;
+}
+.puntos-clave h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem;
+}
+.puntos-clave ul { margin: 0; padding-left: 1.2rem; }
+.puntos-clave li { margin-bottom: .4rem; }
+
+.referencias { margin-top: 1.8rem; scroll-margin-top: 4.5rem; }
+.referencias h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--rejilla-cab);
+}
+.referencias ul { list-style: none; margin: 0; padding: 0; }
+.referencias li {
+  font-size: 0.85rem; color: var(--gris-suave);
+  padding-left: 1.2rem; text-indent: -1.2rem; margin-bottom: .5rem;
+}
+
+/* ---------- Pie ---------- */
+.pie {
+  max-width: 1180px; margin: 0 auto; padding: 0 1rem 2rem;
+  font-size: 0.85rem; color: var(--gris-suave); text-align: center;
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  body { background: #fff; }
+  .barra, .indice, .saltar { display: none !important; }
+  .envoltura { display: block; max-width: none; padding: 0; }
+  .documento { border: 0; }
+  .ficha, .aviso, .puntos-clave, .rejilla-envoltura, .proc, tr { break-inside: avoid; }
+  h2.seccion { break-after: avoid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="saltar" href="#documento">Ir al contenido</a>
+<div class="barra" role="toolbar" aria-label="Opciones de lectura"><span class="barra-titulo">Tema 06 — Eficiencia: copiar, rellenar y datos de práctica con IA</span><button type="button" id="texto-menos" aria-label="Reducir el tamaño del texto">A−</button><button type="button" id="texto-mas" aria-label="Aumentar el tamaño del texto">A+</button><button type="button" id="cambiar-tema" aria-pressed="false">Modo oscuro</button></div>
+<div class="envoltura">
+<nav class="indice" aria-label="Contenido de la guía"><h2>Contenido</h2><ol><li><a href="#s-1-copiar-formato-la-brocha">1. Copiar formato: la brocha</a></li><li><a href="#s-2-pegado-especial-valores-formatos-y-transponer">2. Pegado especial: valores, formatos y transponer</a></li><li><a href="#s-3-relleno-rapido-flash-fill-excel-adivina-el-patron">3. Relleno Rápido (Flash Fill): Excel adivina el patrón</a></li><li><a href="#s-4-series-de-relleno-continuar-numeros-y-fechas">4. Series de relleno: continuar números y fechas</a></li><li><a href="#s-5-la-ia-para-generar-datos-ficticios-de-practica">5. La IA para generar datos ficticios de práctica</a></li><li><a href="#s-6-fichas-de-herramientas-de-copiado-y-relleno">6. Fichas de herramientas de copiado y relleno</a></li><li><a href="#s-7-ejemplo-resuelto-relleno-rapido-flash-fill">7. Ejemplo resuelto: Relleno Rápido (Flash Fill)</a></li><li><a href="#s-8-ejemplo-resuelto-semillas-de-series">8. Ejemplo resuelto: semillas de series</a></li><li><a href="#s-puntos-clave">Puntos clave</a></li><li><a href="#s-referencias">Referencias</a></li></ol></nav>
+<main class="documento" id="documento" tabindex="-1">
+<header class="portada">
+<p class="portada-etiqueta">EXCEL BÁSICO CON IA · PRÁCTICA GUIADA</p>
+<h1 class="portada-titulo">Tema 06 — Eficiencia: copiar, rellenar y datos de práctica con IA</h1>
+<p class="portada-subtitulo">Acelerar la captura con la brocha, el Pegado especial, el Relleno Rápido y las series, y generar con IA datos ficticios para practicar sin exponer información real.</p>
+</header>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">En breve.</span> En esta guía verás cuatro formas de ahorrar tiempo al capturar: la brocha para copiar el formato, el Pegado especial para elegir qué se pega, el Relleno Rápido para que Excel adivine un patrón y las series para continuar números y fechas. También practicarás pedir a la IA datos ficticios de práctica y verificar la respuesta antes de usarla.</p></aside>
+<h2 class="seccion" id="s-1-copiar-formato-la-brocha" tabindex="-1">1. Copiar formato: la brocha</h2>
+<p><strong>Copiar formato</strong> (la <strong>brocha</strong>) copia solo la apariencia de una celda: color de fondo, tipo de letra, bordes y formato de número. No copia el contenido. Es como tomar la presentación de una celda ya terminada y aplicarla a otra sin repetir cada paso. Selecciona la celda con el aspecto que te gusta, activa la brocha en <strong>Inicio</strong> y haz clic en la celda de destino: el formato pasa y el valor de esa celda se conserva.</p>
+<p>Un detalle útil: con doble clic en la brocha queda activa para varias celdas seguidas; al terminar, pulsa <strong>Esc</strong> para desactivarla.</p>
+<h2 class="seccion" id="s-2-pegado-especial-valores-formatos-y-transponer" tabindex="-1">2. Pegado especial: valores, formatos y transponer</h2>
+<p>Al copiar una celda, Excel guarda todo: el valor, la fórmula y el formato. El <strong>Pegado especial</strong> te deja elegir qué parte quieres pegar. Los tres usos de esta guía son: <strong>Valores</strong> (pegar solo el resultado, sin la fórmula), <strong>Formatos</strong> (pegar solo la apariencia) y <strong>Transponer</strong> (cambiar filas por columnas y viceversa). Copia la celda o el rango, haz clic derecho en el destino y abre <strong>Pegado especial</strong> para ver las opciones.</p>
+<p>Pegar como <strong>Valores</strong> es especialmente útil: convierte una fórmula en su resultado fijo. Si copias una celda que contiene =D2*C2 y la pegas como Valores, en el destino queda solo el número; la fórmula desaparece y ya no depende de otras celdas.</p>
+<h2 class="seccion" id="s-3-relleno-rapido-flash-fill-excel-adivina-el-patron" tabindex="-1">3. Relleno Rápido (Flash Fill): Excel adivina el patrón</h2>
+<p>El <strong>Relleno Rápido</strong> (<strong>Flash Fill</strong>) es una herramienta que observa el patrón de lo que escribes y completa la columna por ti. Por ejemplo, si tienes una lista de correos como juan.perez@empresa-ejemplo.com y escribes Juan en la celda de al lado, Excel adivina que quieres el primer nombre y completa Ana y Carlos en las filas siguientes. Escribe el primer ejemplo, presiona <strong>Enter</strong> y después <strong>Ctrl + E</strong> (o <strong>Datos &gt; Relleno Rápido</strong>).</p>
+<p>Importante: el Relleno Rápido deja <strong>texto fijo</strong>, no una fórmula. La celda queda con el valor Juan, Ana o Carlos escrito tal cual; no hay una función detrás que se actualice si cambias el correo.</p>
+<h2 class="seccion" id="s-4-series-de-relleno-continuar-numeros-y-fechas" tabindex="-1">4. Series de relleno: continuar números y fechas</h2>
+<p>Una <strong>serie de relleno</strong> es una secuencia que Excel reconoce y continúa sola cuando arrastras el control de relleno: el pequeño cuadro que aparece en la esquina inferior derecha de la celda seleccionada. Escribe la semilla, por ejemplo 1 o Ene, y arrastra hacia abajo o hacia la derecha: Excel sigue el patrón (2, 3, 4… o Feb, Mar, Abr…).</p>
+<p>Funciona con números, meses abreviados, días de la semana, fechas y hasta patrones de incremento: si escribes 10 y 20 en dos celdas y arrastras, Excel continúa 30, 40, 50…</p>
+<h2 class="seccion" id="s-5-la-ia-para-generar-datos-ficticios-de-practica" tabindex="-1">5. La IA para generar datos ficticios de práctica</h2>
+<p>La <strong>IA generativa</strong> puede crear conjuntos de datos ficticios para que practiques sin exponer información real: listas de clientes, inventarios o cualquier tabla de ejemplo. Pídele una cantidad definida de registros, los campos que necesitas y el formato de las fechas, y revísalo antes de pegarlo en Excel. El archivo de práctica de este tema trabaja con 20 registros de clientes; la solicitud a la IA debe pedir 20, no 15.</p>
+<p>La regla de privacidad no cambia: la IA solo recibe datos ficticios. Nunca le pegues listas reales de personal, clientes o proveedores. Verifica además que la respuesta no traiga nombres o correos que correspondan a personas reales.</p>
+<h2 class="seccion" id="s-6-fichas-de-herramientas-de-copiado-y-relleno" tabindex="-1">6. Fichas de herramientas de copiado y relleno</h2>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Copiar formato (brocha)</code><span class="ficha-guion">—</span><span class="ficha-quehace">Copia solo la apariencia de una celda y la aplica a otra, sin tocar el contenido.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Inicio &gt; Copiar formato (icono de brocha)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Si una celda tiene fondo beige y formato de moneda, la brocha lo lleva a otra celda.</code></li><li><code class="mono">Doble clic en la brocha la deja activa para varias celdas seguidas.</code></li><li><code class="mono">La brocha no cambia valores: copia apariencia, no contenido.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para dar el mismo aspecto a varias celdas sin repetir pasos.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Pegado especial Valores</code><span class="ficha-guion">—</span><span class="ficha-quehace">Pega solo el resultado de la celda, sin la fórmula.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Copiar; clic derecho &gt; Pegado especial &gt; Valores</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Copia una celda con fórmula y pégala como Valores: queda solo el número.</code></li><li><code class="mono">Útil para quitar fórmulas antes de compartir un archivo.</code></li><li><code class="mono">El formato de origen no se copia: se pega el valor tal cual.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para fijar resultados y evitar que cambien si modificas las celdas de origen.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Pegado especial Formatos</code><span class="ficha-guion">—</span><span class="ficha-quehace">Pega solo la apariencia de las celdas copiadas, sin valores ni fórmulas.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Copiar; clic derecho &gt; Pegado especial &gt; Formatos</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Copia el color y el tipo de letra de una celda a otra.</code></li><li><code class="mono">El contenido de la celda de destino se conserva.</code></li><li><code class="mono">Es la opción del menú cuando no quieres usar la brocha.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para aplicar la misma presentación conservando los datos de destino.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Transponer</code><span class="ficha-guion">—</span><span class="ficha-quehace">Cambia la orientación de los datos: lo que está en filas pasa a columnas y viceversa.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Copiar; clic derecho &gt; Pegado especial &gt; Transponer</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Una lista de meses en una fila pasa a una columna.</code></li><li><code class="mono">Una tabla de 3 filas por 2 columnas se voltea a 2 filas por 3 columnas.</code></li><li><code class="mono">Útil para acomodar datos que llegaron en el orden equivocado.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para girar una tabla sin volver a teclear los datos.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Relleno Rápido (Flash Fill)</code><span class="ficha-guion">—</span><span class="ficha-quehace">Excel adivina el patrón que sigues y completa la columna con texto fijo.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Escribir el primer ejemplo; Enter y Ctrl + E (o Datos &gt; Relleno Rápido)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">De juan.perez@empresa-ejemplo.com extrae Juan en la columna de al lado.</code></li><li><code class="mono">Combina nombre y apellido en una sola celda siguiendo tu ejemplo.</code></li><li><code class="mono">Completa Ana y Carlos después de escribir Juan como primer ejemplo.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para extraer o combinar datos que siguen un patrón visible.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Series de relleno</code><span class="ficha-guion">—</span><span class="ficha-quehace">Arrastrar el control de relleno para continuar una secuencia que Excel reconoce.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Seleccionar la celda y arrastrar el cuadro inferior derecho</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Con 1 en la celda y arrastrando, continúa 2, 3, 4…</code></li><li><code class="mono">Con Ene continúa Feb, Mar, Abr…</code></li><li><code class="mono">Con 01/04/2026 continúa 02/04/2026, 03/04/2026…</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para numerar filas o llenar fechas sin teclear una por una.</p>
+</article>
+<h2 class="seccion" id="s-7-ejemplo-resuelto-relleno-rapido-flash-fill" tabindex="-1">7. Ejemplo resuelto: Relleno Rápido (Flash Fill)</h2>
+<p>Este es un recorte de la hoja <strong>Base_Personal</strong> de tu archivo de práctica, que trae más columnas y más registros. Las identidades son las del catálogo del curso: personal ficticio con correos en @empresa-ejemplo.com. La columna F es la de práctica: escribe Juan en F2, presiona <strong>Enter</strong> y luego <strong>Ctrl + E</strong>: Excel completa Ana y Carlos a partir del patrón de los correos. El resultado queda como texto fijo, no como fórmula. Para que quepa con holgura, la minihoja se muestra en dos recortes: el primero con las columnas A a D y el segundo con E y F, con la misma numeración de filas.</p>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th><th scope="col" class="cab-col">C</th><th scope="col" class="cab-col">D</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>ID empleado</strong></td><td class="celda cab-dato"><strong>Nombre</strong></td><td class="celda cab-dato"><strong>Apellido paterno</strong></td><td class="celda cab-dato"><strong>Departamento</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda col-izq">EMP001</td><td class="celda col-izq">Juan</td><td class="celda col-izq">Pérez</td><td class="celda col-izq">Administración</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda col-izq">EMP002</td><td class="celda col-izq">Ana</td><td class="celda col-izq">López</td><td class="celda col-izq">Ventas</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda col-izq">EMP003</td><td class="celda col-izq">Carlos</td><td class="celda col-izq">Méndez</td><td class="celda col-izq">Operaciones</td></tr></tbody></table></div>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">E</th><th scope="col" class="cab-col">F</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Correo</strong></td><td class="celda cab-dato"><strong>Nombre extraído</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda col-izq">juan.perez@empresa-ejemplo.com</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Juan</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda col-izq">ana.lopez@empresa-ejemplo.com</td><td class="celda formula col-izq"><span class="sr-only">Celda que completa Excel. </span>Ana</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda col-izq">carlos.mendez@empresa-ejemplo.com</td><td class="celda formula col-izq"><span class="sr-only">Celda que completa Excel. </span>Carlos</td></tr></tbody></table></div>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Nota.</span> El Relleno Rápido deja texto fijo, no fórmula: la celda gris la completa Excel, pero no hay una función detrás que se actualice si cambias el correo. Por eso la leyenda de esta rejilla no lleva el sufijo de fórmula que se usa en otros temas.</p></aside>
+<h2 class="seccion" id="s-8-ejemplo-resuelto-semillas-de-series" tabindex="-1">8. Ejemplo resuelto: semillas de series</h2>
+<p>Estas son las semillas canónicas del curso y lo que Excel debe continuar al arrastrar el control de relleno:</p>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Semilla</th><th scope="col" class="col-izq">Resultado que debe continuar</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Semilla">1</td><td class="col-izq" data-rotulo="Resultado que debe continuar">2, 3, 4…</td></tr><tr><td class="col-izq" data-rotulo="Semilla">Ene</td><td class="col-izq" data-rotulo="Resultado que debe continuar">Feb, Mar, Abr…</td></tr><tr><td class="col-izq" data-rotulo="Semilla">Lun</td><td class="col-izq" data-rotulo="Resultado que debe continuar">Mar, Mié, Jue…</td></tr><tr><td class="col-izq" data-rotulo="Semilla">01/04/2026</td><td class="col-izq" data-rotulo="Resultado que debe continuar">02/04/2026, 03/04/2026…</td></tr><tr><td class="col-izq" data-rotulo="Semilla">10, 20</td><td class="col-izq" data-rotulo="Resultado que debe continuar">30, 40, 50…</td></tr></tbody></table></div>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Consejo.</span> Si escribes 10 y 20 en dos celdas y arrastras con ambas seleccionadas, Excel reconoce el incremento de 10 y continúa 30, 40, 50…; si seleccionas una sola celda con un número, repite el mismo valor.</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Con ayuda de la IA (T-A-R-F).</span> Prompt de ejemplo: &quot;Tarea: genera una tabla de 20 registros ficticios de clientes con las columnas Nombre, Correo y Ciudad, para practicar copiado, pegado y relleno. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que genera datos de práctica con instrucciones sencillas. Formato: tabla con encabezados, correos en minúsculas y sin datos reales. Antes de usar la respuesta, verifica que sean exactamente 20 registros, que ninguna persona, correo o ciudad corresponda a datos reales y que las columnas coincidan con lo que pediste.&quot;</p></aside>
+<aside class="aviso aviso--alerta" role="note"><p><span class="aviso-etiqueta">Advertencia.</span> Nunca pegues información real en una herramienta de IA: sustituye nombres, correos y cifras por datos ficticios. Verifica siempre la respuesta antes de pegarla en Excel: la IA puede inventar registros, repetir filas o escribir fechas en otro formato.</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Nota.</span> Pegar como Valores convierte una fórmula en su resultado fijo. Es útil antes de compartir un archivo, para que quien lo reciba no dependa de las celdas de origen.</p></aside>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Herramienta</th><th scope="col" class="col-izq">Para qué sirve</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Herramienta">Brocha (Copiar formato)</td><td class="col-izq" data-rotulo="Para qué sirve">Copiar solo la apariencia de una celda</td></tr><tr><td class="col-izq" data-rotulo="Herramienta">Pegado especial Valores</td><td class="col-izq" data-rotulo="Para qué sirve">Quitar fórmulas y dejar solo el resultado</td></tr><tr><td class="col-izq" data-rotulo="Herramienta">Pegado especial Formatos</td><td class="col-izq" data-rotulo="Para qué sirve">Copiar solo la apariencia, sin contenido</td></tr><tr><td class="col-izq" data-rotulo="Herramienta">Transponer</td><td class="col-izq" data-rotulo="Para qué sirve">Cambiar filas por columnas y viceversa</td></tr><tr><td class="col-izq" data-rotulo="Herramienta">Relleno Rápido (Flash Fill)</td><td class="col-izq" data-rotulo="Para qué sirve">Extraer o combinar datos siguiendo un patrón</td></tr><tr><td class="col-izq" data-rotulo="Herramienta">Series de relleno</td><td class="col-izq" data-rotulo="Para qué sirve">Continuar una secuencia al arrastrar</td></tr></tbody></table></div>
+<aside class="aviso aviso--exito" role="note"><p><span class="aviso-etiqueta">Comprobación.</span> En tu archivo, escribe Juan junto al correo juan.perez@empresa-ejemplo.com y presiona Ctrl + E: Excel debe completar Ana y Carlos siguiendo el patrón, y las celdas quedan como texto fijo, no como fórmula. Al arrastrar la semilla 1, Excel continúa 2, 3, 4; con 01/04/2026, continúa 02/04/2026, 03/04/2026.</p></aside>
+<section class="puntos-clave" id="s-puntos-clave" tabindex="-1"><h2>Puntos clave</h2><ul><li>La brocha copia solo la apariencia, no el contenido.</li><li>Pegar como Valores fija los resultados y quita las fórmulas.</li><li>El Relleno Rápido adivina el patrón y deja texto fijo, no fórmula.</li><li>Las series continúan números, meses, días y fechas al arrastrar.</li><li>La IA genera datos ficticios de práctica; verifica la respuesta antes de usarla.</li></ul></section>
+<section class="referencias" id="s-referencias" tabindex="-1"><h2>Referencias</h2><ul><li>Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li>Microsoft. (2025). Rellenar datos automáticamente en celdas de una hoja de cálculo. Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/rellenar-datos-autom%C3%A1ticamente-en-celdas-de-una-hoja-de-c%C3%A1lculo-74e31bdd-d993-45da-aa82-35a236c5b5db</li><li>OpenAI. (2025). ChatGPT [Modelo de lenguaje grande]. https://chat.openai.com</li></ul></section>
+</main>
+</div>
+<footer class="pie">Excel Básico con Inteligencia Artificial · Datos ficticios para práctica.</footer>
+<script>
+(function () {
+  var raiz = document.documentElement;
+  var escala = 1;
+
+  function aplicarEscala() {
+    raiz.style.setProperty('--escala', escala);
+  }
+  var bMas = document.getElementById('texto-mas');
+  var bMenos = document.getElementById('texto-menos');
+  var bTema = document.getElementById('cambiar-tema');
+
+  if (bMas) bMas.addEventListener('click', function () {
+    escala = Math.min(1.5, escala + 0.1); aplicarEscala();
+  });
+  if (bMenos) bMenos.addEventListener('click', function () {
+    escala = Math.max(0.85, escala - 0.1); aplicarEscala();
+  });
+  if (bTema) bTema.addEventListener('click', function () {
+    var oscuro = raiz.getAttribute('data-tema') === 'oscuro';
+    raiz.setAttribute('data-tema', oscuro ? 'claro' : 'oscuro');
+    bTema.setAttribute('aria-pressed', String(!oscuro));
+    bTema.textContent = oscuro ? 'Modo oscuro' : 'Modo claro';
+  });
+
+  // Resalta en el índice la sección visible.
+  var enlaces = Array.prototype.slice.call(
+    document.querySelectorAll('.indice a')
+  );
+  var destinos = enlaces
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if ('IntersectionObserver' in window && destinos.length) {
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        enlaces.forEach(function (a) {
+          a.classList.toggle(
+            'activo', a.getAttribute('href') === '#' + e.target.id
+          );
+        });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    destinos.forEach(function (d) { obs.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>

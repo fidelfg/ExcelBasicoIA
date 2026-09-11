@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 08 — Limpieza y unión de texto</title>
+<meta name="description" content="Guía web del Tema 8 del curso Excel Básico con Inteligencia Artificial: MAYUSC, MINUSC, NOMPROPIO, ESPACIOS, operador &amp;, CONCAT, Texto en Columnas y la IA para detectar inconsistencias en datos ficticios.">
+<style>
+:root {
+  --azul: #854209;
+  --azul-tx: #FFFFFF;
+  --inst-superficie: #854209;
+  --gris-tx: #3A3A3A;
+  --gris-suave: #616B67;
+  --info-bg: #F8DBBE;   --info-ac: #854209;
+  --exito-bg: #D9EADF; --exito-ac: #2E5940;
+  --alerta-bg: #F6E0DC; --alerta-ac: #B23A2E;
+  --captura-bg: #F5E9DC;
+  --formula-bg: #E4E1DC;
+  --formula-bg2: #C2BFBB;
+  --cab-tabla-bg: #854209; --cab-tabla-tx: #FFFFFF;
+  --rejilla-cab: #D4CEC4;
+  --borde: #C6C0B7;
+  --ficha-bg: #FAF7F2;
+  --papel: #FFFFFF;
+  --fondo: #ECEEED;
+  --f-titulo: "Segoe UI Semibold", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-cuerpo: Calibri, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+  --radio: 10px;
+  --escala: 1;
+}
+
+/* Modo oscuro: cambia el papel, NUNCA el código de color de la hoja de cálculo
+   (beige = quien practica escribe; gris = lo completa Excel), para no
+   romper el significado. */
+[data-tema="oscuro"] {
+  --papel: #1E1B18;
+  --fondo: #141210;
+  --gris-tx: #EAE6E0;
+  --gris-suave: #A7B0AB;
+  --azul: #E9A467;
+  --info-bg: #2E2318;
+  --exito-bg: #1B2A22;
+  --alerta-bg: #33201F;
+  --ficha-bg: #26221D;
+  --borde: #443E36;
+  --cab-tabla-bg: #6B3508;
+  --rejilla-cab: #433D34;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: calc(100% * var(--escala)); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--gris-tx);
+  font-family: var(--f-cuerpo);
+  font-size: 1.0rem;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+  background: rgba(133,66,9,.07);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  padding: .05em .35em;
+  /* NO "white-space: nowrap": una sintaxis de menú ("Inicio > Portapapeles >
+     Copiar formato") o un ejemplo largo de ficha_funcion se salen del
+     contenedor sin aviso -- no hacen scroll, se cortan visualmente contra el
+     borde de la tarjeta. Los tokens cortos (un nombre de función, "B2", una
+     clave de procedimiento) no tienen espacios, así que envolver no les
+     cambia el aspecto; solo protege a los que sí son largos. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+[data-tema="oscuro"] .mono { background: rgba(255,255,255,.08); }
+
+.sr-only {
+  position: absolute; left: -9999px; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 100;
+  background: var(--inst-superficie); color: #fff; padding: .6rem 1rem;
+}
+.saltar:focus { left: .5rem; top: .5rem; }
+
+:focus-visible { outline: 3px solid var(--exito-ac); outline-offset: 2px; }
+
+/* ---------- Barra de lectura ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  padding: .55rem 1rem;
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-titulo {
+  font-family: var(--f-titulo); font-weight: 700; color: var(--azul);
+  margin-right: auto; font-size: 0.92rem;
+}
+@media (max-width: 520px) {
+  .barra-titulo { flex: 1 1 100%; }
+}
+.barra button {
+  font-family: var(--f-cuerpo); font-size: 0.85rem;
+  color: var(--gris-tx); background: transparent;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .35rem .8rem; cursor: pointer; min-height: 2.2rem;
+}
+.barra button:hover { background: var(--info-bg); }
+
+/* El salto por ancla no queda pegado a la barra de lectura fija. */
+h2.seccion, section.puntos-clave, section.referencias, section.proc {
+  scroll-margin-top: 4.2rem;
+}
+
+/* ---------- Estructura ---------- */
+.envoltura {
+  max-width: 1180px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+  display: grid; gap: 1.6rem; grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .envoltura { grid-template-columns: 250px minmax(0, 1fr); }
+}
+
+/* ---------- Índice ---------- */
+.indice {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: .9rem 1rem;
+}
+@media (min-width: 1000px) {
+  .indice { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+}
+.indice h2 {
+  font-family: var(--f-titulo); font-size: 0.85rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gris-suave); margin: 0 0 .6rem;
+}
+.indice ol { list-style: none; margin: 0; padding: 0; }
+.indice li { margin: 0 0 .3rem; }
+.indice a {
+  display: block; color: var(--gris-tx); text-decoration: none;
+  font-size: 0.92rem; padding: .3rem .5rem; border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.indice a:hover, .indice a.activo {
+  background: var(--info-bg); border-left-color: var(--azul); color: var(--azul);
+}
+
+/* ---------- Documento ---------- */
+.documento {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 0 0 1.8rem;
+  min-width: 0;
+}
+.documento > *:not(.portada) { margin-left: 1.4rem; margin-right: 1.4rem; }
+@media (max-width: 520px) {
+  .documento > *:not(.portada) { margin-left: 1rem; margin-right: 1rem; }
+}
+.documento p { margin: 0 0 .75rem; }
+p, li, td, th { overflow-wrap: break-word; word-break: break-word; }
+
+/* ---------- Portada ---------- */
+.portada {
+  background: var(--inst-superficie); color: var(--azul-tx);
+  padding: 1.8rem 1.4rem; border-radius: var(--radio) var(--radio) 0 0;
+  margin-bottom: 1.3rem; border-bottom: 5px solid #D66A0F;
+}
+.portada-etiqueta {
+  font-family: var(--f-titulo); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: .1em; color: #F7D9BE; margin: 0 0 .35rem;
+}
+.portada-titulo {
+  font-family: var(--f-titulo); font-size: 1.9rem; line-height: 1.25;
+  margin: 0; color: #fff; font-weight: 700;
+}
+.portada-subtitulo {
+  font-size: 1.0rem; color: #FBE7D6; font-style: italic;
+  margin: .5rem 0 0;
+}
+[data-tema="oscuro"] .portada { background: #5A2D07; }
+
+/* ---------- Secciones ---------- */
+h2.seccion {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 1.7rem 1.4rem .7rem; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--rejilla-cab);
+  scroll-margin-top: 4.5rem;
+}
+
+/* ---------- Cajas de aviso ---------- */
+.aviso {
+  border-left: 5px solid var(--info-ac); border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--info-bg); padding: .85rem 1rem; margin: 0 1.4rem 1rem;
+}
+.aviso p { margin: 0; font-size: 0.92rem; }
+.aviso-etiqueta { font-family: var(--f-titulo); font-weight: 700; color: var(--info-ac); }
+.aviso--exito {
+  background: var(--exito-bg); border-left-color: var(--exito-ac);
+}
+.aviso--exito .aviso-etiqueta { color: var(--exito-ac); }
+.aviso--alerta {
+  background: var(--alerta-bg); border-left-color: var(--alerta-ac);
+  border-left-style: double; border-left-width: 7px;
+}
+.aviso--alerta .aviso-etiqueta { color: var(--alerta-ac); }
+[data-tema="oscuro"] .aviso--exito .aviso-etiqueta { color: #8FBFA0; }
+[data-tema="oscuro"] .aviso--alerta .aviso-etiqueta { color: #E8998C; }
+[data-tema="oscuro"] .aviso-etiqueta { color: #E9A467; }
+
+/* ---------- Listas ---------- */
+.lista { margin: 0 0 1rem; padding-left: 1.2rem; }
+.lista li { margin-bottom: .35rem; }
+
+/* ---------- Línea de fórmula ---------- */
+.linea-formula {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  /* Solo top y bottom, con !important para ganarle a ".documento p" (que es
+     más específico). El margin-left/right NO se toca aquí: debe heredar el
+     de ".documento > *:not(.portada)", o el bloque queda pegado al borde
+     mientras el resto del texto respeta la sangría. Ya pasó una vez: usar el
+     shorthand "margin: 0 0 .45rem !important" ponía left y right en 0 sin
+     querer, y el !important le ganaba a la regla de sangría aunque esta
+     viniera después en la hoja de estilos. */
+  margin-top: 0 !important;
+  margin-bottom: .45rem !important;
+}
+.formula-celda {
+  font-family: var(--f-mono); font-weight: 700; color: var(--azul);
+  min-width: 2.6rem;
+}
+.formula-texto { white-space: normal; word-break: break-word; }
+.formula-explica { color: var(--gris-suave); font-size: 0.92rem; }
+
+/* ---------- Tabla de conceptos ---------- */
+.tabla-envoltura { margin-bottom: 1.1rem; }
+.tabla-conceptos {
+  width: 100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.tabla-conceptos th {
+  background: var(--cab-tabla-bg); color: var(--cab-tabla-tx);
+  font-family: var(--f-titulo); font-weight: 700;
+  padding: .55rem .7rem; border: 1px solid var(--borde);
+}
+.tabla-conceptos td {
+  padding: .5rem .7rem; border: 1px solid var(--borde); vertical-align: top;
+}
+.tabla-conceptos .col-izq { text-align: left; }
+.tabla-conceptos .col-der { text-align: right; }
+.tabla-conceptos .fila-total td { font-weight: 700; }
+
+/* En móvil la tabla se apila y cada celda muestra su encabezado. */
+@media (max-width: 640px) {
+  .tabla-conceptos thead { display: none; }
+  .tabla-conceptos, .tabla-conceptos tbody, .tabla-conceptos tr, .tabla-conceptos td {
+    display: block; width: 100%;
+  }
+  .tabla-conceptos tr {
+    border: 1px solid var(--borde); border-radius: 8px;
+    margin-bottom: .7rem; overflow: visible;
+  }
+  .tabla-conceptos td { border: 0; border-bottom: 1px solid var(--borde); text-align: left !important; }
+  .tabla-conceptos tr td:last-child { border-bottom: 0; }
+  .tabla-conceptos td::before {
+    content: attr(data-rotulo);
+    display: block; font-family: var(--f-titulo); font-weight: 700;
+    font-size: 0.85rem; color: var(--gris-suave); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: .15rem;
+  }
+}
+
+/* ---------- Rejilla de Excel ---------- */
+.rejilla-envoltura {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde); border-radius: 8px; margin-bottom: .8rem;
+}
+.rejilla { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+.rejilla th {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+  padding: .4rem .6rem; border: 1px solid var(--borde);
+}
+.rejilla .cab-fila { width: 2.2rem; }
+.rejilla .esquina { width: 2.2rem; }
+.rejilla td {
+  padding: .45rem .7rem; border: 1px solid var(--borde);
+  background: var(--papel); white-space: nowrap;
+}
+.rejilla td.cab-dato {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+}
+.rejilla .col-izq { text-align: left; }
+.rejilla .col-der { text-align: right; }
+.rejilla .captura { background: var(--captura-bg); color: #3A3A3A; }
+.rejilla .formula { background: var(--formula-bg); color: #3A3A3A; font-family: var(--f-mono); }
+
+/* ---------- Leyenda de colores ---------- */
+.leyenda {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  padding: 0; margin: 0 0 1.1rem; font-size: 0.92rem; color: var(--gris-suave);
+}
+.leyenda li { display: flex; align-items: center; gap: .45rem; }
+.muestra {
+  width: 1.05rem; height: 1.05rem; border-radius: 4px;
+  border: 1px solid var(--borde); display: inline-block; flex: none;
+}
+
+/* ---------- Fichas de función ---------- */
+.ficha {
+  background: var(--ficha-bg); border-left: 4px solid var(--azul);
+  border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: .8rem;
+}
+.ficha-nombre {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+  margin: 0 0 .5rem; font-size: 1.0rem;
+}
+.ficha-nombre .mono { color: var(--azul); font-weight: 700; }
+.ficha-guion { color: var(--gris-suave); }
+.ficha-quehace {
+  font-family: var(--f-cuerpo); font-weight: 400; font-size: 0.92rem;
+  color: var(--gris-tx);
+}
+.ficha-linea { margin: 0 0 .3rem !important; font-size: 0.92rem; }
+.ficha-rotulo { font-weight: 700; color: var(--gris-suave); }
+.ficha-ejemplos { list-style: none; margin: .2rem 0 .4rem; padding-left: .9rem; }
+.ficha-ejemplos li { margin-bottom: .25rem; }
+.ficha-ejemplos li::before { content: "– "; color: var(--gris-suave); }
+
+/* ---------- Procedimientos (ayuda al desempeño) ---------- */
+.proc {
+  border-radius: var(--radio); overflow: hidden; margin: 1.1rem 0 1.4rem;
+  border-left: 4px solid var(--azul); background: var(--ficha-bg);
+  scroll-margin-top: 4.5rem;
+}
+.proc-cab { background: var(--inst-superficie); padding: .8rem 1rem .85rem; }
+.proc-clave { margin: 0 0 .15rem; }
+.proc-clave .mono {
+  color: #F7D9BE; font-size: 0.85rem; font-weight: 700; letter-spacing: .04em;
+}
+.proc-titulo {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.18rem;
+  color: var(--azul-tx); line-height: 1.3;
+}
+.proc-paraque {
+  margin: .3rem 0 0 !important; font-size: 0.92rem; color: #FBE7D6;
+}
+.proc-cuerpo { padding: .8rem 1rem .9rem; }
+.proc-rotulo {
+  margin: .75rem 0 .25rem !important; font-family: var(--f-titulo);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gris-suave);
+}
+.proc-cuerpo .proc-rotulo:first-child, .proc-bloque .proc-rotulo { margin-top: 0 !important; }
+.proc-rotulo--ok { color: var(--exito-ac); }
+.proc-rotulo--falla { color: var(--alerta-ac); }
+.proc-texto { margin: 0 !important; font-size: 0.92rem; }
+.proc .ui, .proc-pasos .ui { font-weight: 700; color: var(--azul); }
+.proc-cab .ui { color: var(--azul-tx); }
+.proc-figura { margin: .7rem 0 .2rem; text-align: center; }
+.proc-figura img {
+  max-width: 100%; height: auto; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--papel);
+}
+.proc-figura figcaption {
+  margin-top: .3rem; font-size: 0.85rem; color: var(--gris-suave);
+  font-style: italic;
+}
+[data-tema="oscuro"] .proc .ui { color: #E9A467; }
+.proc-pasos {
+  margin: .2rem 0 0; padding-left: 0; list-style: none; counter-reset: paso;
+}
+.proc-pasos li {
+  counter-increment: paso; position: relative; padding-left: 2rem;
+  margin-bottom: .4rem; font-size: 0.92rem;
+}
+.proc-pasos li::before {
+  content: counter(paso); position: absolute; left: 0; top: .05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--inst-superficie); color: var(--azul-tx);
+  font-family: var(--f-mono); font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.proc-atajo { margin: .1rem 0 0 !important; }
+.proc-atajo kbd {
+  font-family: var(--f-mono); font-size: 0.95rem;
+  background: var(--papel); border: 1px solid var(--borde);
+  border-bottom-width: 2px; border-radius: 6px; padding: .12rem .5rem;
+  color: var(--gris-tx);
+}
+.proc-bloque { padding: .7rem 1rem; border-top: 1px solid var(--borde); }
+.proc-ok { background: var(--exito-bg); border-left: 5px solid var(--exito-ac); }
+.proc-falla {
+  background: var(--alerta-bg); border-left: 7px double var(--alerta-ac);
+}
+.proc-errores { margin: .25rem 0 0; padding-left: 1.1rem; }
+.proc-errores li { margin-bottom: .3rem; font-size: 0.92rem; }
+.proc-errores li::marker { color: var(--alerta-ac); }
+.proc-nota {
+  margin: 0 !important; padding: .55rem 1rem .7rem;
+  font-size: 0.85rem; color: var(--gris-suave);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 480px) {
+  .proc-cab, .proc-cuerpo, .proc-bloque, .proc-nota { padding-left: .8rem; padding-right: .8rem; }
+}
+
+/* ---------- Puntos clave y referencias ---------- */
+.puntos-clave {
+  background: var(--info-bg); border: 1px solid var(--rejilla-cab);
+  border-radius: var(--radio); padding: 1rem 1.2rem; margin-top: 1.8rem;
+  scroll-margin-top: 4.5rem;
+}
+.puntos-clave h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem;
+}
+.puntos-clave ul { margin: 0; padding-left: 1.2rem; }
+.puntos-clave li { margin-bottom: .4rem; }
+
+.referencias { margin-top: 1.8rem; scroll-margin-top: 4.5rem; }
+.referencias h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--rejilla-cab);
+}
+.referencias ul { list-style: none; margin: 0; padding: 0; }
+.referencias li {
+  font-size: 0.85rem; color: var(--gris-suave);
+  padding-left: 1.2rem; text-indent: -1.2rem; margin-bottom: .5rem;
+}
+
+/* ---------- Pie ---------- */
+.pie {
+  max-width: 1180px; margin: 0 auto; padding: 0 1rem 2rem;
+  font-size: 0.85rem; color: var(--gris-suave); text-align: center;
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  body { background: #fff; }
+  .barra, .indice, .saltar { display: none !important; }
+  .envoltura { display: block; max-width: none; padding: 0; }
+  .documento { border: 0; }
+  .ficha, .aviso, .puntos-clave, .rejilla-envoltura, .proc, tr { break-inside: avoid; }
+  h2.seccion { break-after: avoid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="saltar" href="#documento">Ir al contenido</a>
+<div class="barra" role="toolbar" aria-label="Opciones de lectura"><span class="barra-titulo">Tema 08 — Limpieza y unión de texto</span><button type="button" id="texto-menos" aria-label="Reducir el tamaño del texto">A−</button><button type="button" id="texto-mas" aria-label="Aumentar el tamaño del texto">A+</button><button type="button" id="cambiar-tema" aria-pressed="false">Modo oscuro</button></div>
+<div class="envoltura">
+<nav class="indice" aria-label="Contenido de la guía"><h2>Contenido</h2><ol><li><a href="#s-1-funciones-de-limpieza-mayusc-minusc-nompropio-y-espacios">1. Funciones de limpieza: MAYUSC, MINUSC, NOMPROPIO y ESPACIOS</a></li><li><a href="#s-2-unir-texto-el-operador-y-la-funcion-concat">2. Unir texto: el operador &amp; y la función CONCAT</a></li><li><a href="#s-3-texto-en-columnas-separar-un-dato-en-varias-columnas">3. Texto en Columnas: separar un dato en varias columnas</a></li><li><a href="#s-4-la-ia-para-detectar-inconsistencias">4. La IA para detectar inconsistencias</a></li><li><a href="#s-5-fichas-de-funciones-y-herramientas-de-texto">5. Fichas de funciones y herramientas de texto</a></li><li><a href="#s-6-ejemplo-resuelto-lista-de-clientes">6. Ejemplo resuelto: Lista de Clientes</a></li><li><a href="#s-puntos-clave">Puntos clave</a></li><li><a href="#s-referencias">Referencias</a></li></ol></nav>
+<main class="documento" id="documento" tabindex="-1">
+<header class="portada">
+<p class="portada-etiqueta">EXCEL BÁSICO CON IA · PRÁCTICA GUIADA</p>
+<h1 class="portada-titulo">Tema 08 — Limpieza y unión de texto</h1>
+<p class="portada-subtitulo">Estandarizar nombres, correos y razones sociales con funciones de texto, unir campos con &amp; y CONCAT, separar con Texto en Columnas y usar la IA para detectar inconsistencias sin exponer datos reales.</p>
+</header>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">En breve.</span> En esta guía aprenderás a limpiar una lista de clientes con cuatro funciones de texto: MAYUSC, MINUSC, NOMPROPIO y ESPACIOS; a unir datos con el operador &amp; y la función CONCAT; y a separar un dato en varias columnas con Texto en Columnas. También usarás la IA para detectar inconsistencias en una muestra ficticia y proponer reglas de normalización, verificando siempre la respuesta antes de usarla.</p></aside>
+<h2 class="seccion" id="s-1-funciones-de-limpieza-mayusc-minusc-nompropio-y-espacios" tabindex="-1">1. Funciones de limpieza: MAYUSC, MINUSC, NOMPROPIO y ESPACIOS</h2>
+<p><strong>Limpiar texto</strong> significa quitar lo que estorba —espacios de más y mayúsculas irregulares— sin cambiar el significado del dato. Es como pasar en limpio una libreta donde cada quien escribió a su manera. Cuatro funciones resuelven la mayoría de los casos: <strong>MAYUSC</strong> pasa todo a mayúsculas; <strong>MINUSC</strong> pasa todo a minúsculas; <strong>NOMPROPIO</strong> pone mayúscula inicial en cada palabra (tipo título); y <strong>ESPACIOS</strong> quita los espacios de más, incluidos los del inicio y del final.</p>
+<p>Un caso típico es un nombre capturado como <strong>&quot;  rosa  medina &quot;</strong>. Con <strong>=NOMPROPIO(ESPACIOS(A2))</strong> queda <strong>Rosa Medina</strong>. El correo <strong>&quot; ROSA.MEDINA@CORREO.COM &quot;</strong> pasa a minúsculas y sin espacios con <strong>=MINUSC(ESPACIOS(C2))</strong>: <strong>rosa.medina@correo.com</strong>. La alineación automática de Excel ayuda a detectar el problema: un texto con espacios suele quedar más a la izquierda o desalineado en una columna de nombres.</p>
+<h2 class="seccion" id="s-2-unir-texto-el-operador-y-la-funcion-concat" tabindex="-1">2. Unir texto: el operador &amp; y la función CONCAT</h2>
+<p><strong>Unir texto</strong> (concatenar) es juntar el contenido de dos o más celdas en una sola. El <strong>operador &amp;</strong> es el más directo: <strong>=A2&amp;&quot; &quot;&amp;B2</strong> une el nombre de contacto y la razón social dejando un espacio entre ambos. La <strong>función CONCAT</strong> hace lo mismo con más comodidad cuando son varias partes: <strong>=CONCAT(A2,&quot; — &quot;,B2)</strong> arma una etiqueta clara de contacto y razón social.</p>
+<p>Diferencia práctica: <strong>&amp;</strong> es rápido para unir pocos textos y exige escribir el separador en cada tramo (<strong>&quot; &quot;</strong>, <strong>&quot; — &quot;</strong>); <strong>CONCAT</strong> acepta la lista completa de celdas y separadores de una sola vez, y se lee mejor cuando la cadena crece.</p>
+<h2 class="seccion" id="s-3-texto-en-columnas-separar-un-dato-en-varias-columnas" tabindex="-1">3. Texto en Columnas: separar un dato en varias columnas</h2>
+<p>A veces el problema es el contrario: un dato llegó junto y necesita separarse. <strong>Texto en Columnas</strong> divide el contenido de una columna en varias según un separador: coma, espacio, guion o punto y coma. Por ejemplo, un nombre completo capturado en una sola celda puede quedar en dos columnas: nombre y apellido.</p>
+<p>Para separar con Texto en Columnas: 1) selecciona la columna con los datos juntos; 2) abre <strong>Datos &gt; Texto en Columnas</strong>; 3) elige <strong>Delimitados</strong> y pulsa <strong>Siguiente</strong>; 4) marca el separador que separa los datos (espacio, coma, guion u otro); 5) confirma el destino de las columnas nuevas y finaliza. Comprueba que cada parte haya quedado en su propia columna y que el resto de los datos no se haya corrido.</p>
+<h2 class="seccion" id="s-4-la-ia-para-detectar-inconsistencias" tabindex="-1">4. La IA para detectar inconsistencias</h2>
+<p>La <strong>IA generativa</strong> redacta una respuesta nueva a partir de lo que le pides. En este tema la usas para revisar una muestra ficticia y detectar inconsistencias: mayúsculas mezcladas, espacios extra o valores de catálogo escritos de varias formas. Pídele que proponga reglas de normalización —qué función usar y en qué orden— y verifica cada regla contra la hoja limpia de tu archivo antes de aplicarla.</p>
+<p>La regla de privacidad no cambia: la IA solo recibe datos ficticios. Nunca le pegues una base real de clientes con nombres, correos o teléfonos de personas reales.</p>
+<h2 class="seccion" id="s-5-fichas-de-funciones-y-herramientas-de-texto" tabindex="-1">5. Fichas de funciones y herramientas de texto</h2>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">MAYUSC</code><span class="ficha-guion">—</span><span class="ficha-quehace">Convierte todo el texto en mayúsculas.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=MAYUSC(texto)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=MAYUSC(&quot;Gran Surtido&quot;) → GRAN SURTIDO</code></li><li><code class="mono">=MAYUSC(B2) convierte la razón social en GRAN SURTIDO S.A. DE C.V.</code></li><li><code class="mono">=MAYUSC(&quot;zona a&quot;) → ZONA A</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para estandarizar códigos, siglas o etiquetas que deben ir en mayúsculas.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">MINUSC</code><span class="ficha-guion">—</span><span class="ficha-quehace">Convierte todo el texto en minúsculas.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=MINUSC(texto)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=MINUSC(&quot;ROSA.MEDINA@CORREO.COM&quot;) → rosa.medina@correo.com</code></li><li><code class="mono">=MINUSC(ESPACIOS(C2)) → rosa.medina@correo.com</code></li><li><code class="mono">=MINUSC(&quot;Zona A&quot;) → zona a</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para correos y textos que deben quedar en minúsculas.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">NOMPROPIO</code><span class="ficha-guion">—</span><span class="ficha-quehace">Pone mayúscula inicial en cada palabra y minúsculas en el resto (tipo título).</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=NOMPROPIO(texto)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=NOMPROPIO(&quot;rosa medina&quot;) → Rosa Medina</code></li><li><code class="mono">=NOMPROPIO(&quot;zona a&quot;) → Zona A</code></li><li><code class="mono">=NOMPROPIO(ESPACIOS(A2)) → Rosa Medina</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para nombres de personas, ciudades y razones sociales que deben leerse en formato título.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">ESPACIOS</code><span class="ficha-guion">—</span><span class="ficha-quehace">Quita los espacios de más: deja uno solo entre palabras y ninguno al inicio o al final.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=ESPACIOS(texto)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=ESPACIOS(&quot;  rosa  medina &quot;) → rosa medina</code></li><li><code class="mono">=ESPACIOS(&quot; ROSA.MEDINA@CORREO.COM &quot;) → ROSA.MEDINA@CORREO.COM</code></li><li><code class="mono">=ESPACIOS(A2) deja un solo espacio entre las palabras del nombre</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Antes de NOMPROPIO o MINUSC, para que la limpieza no arrastre espacios invisibles.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Operador &amp;</code><span class="ficha-guion">—</span><span class="ficha-quehace">Une el contenido de dos o más celdas en una sola, con los separadores que escribas.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=celda1&amp;&quot; &quot;&amp;celda2</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=A2&amp;&quot; &quot;&amp;B2 une el nombre de contacto y la razón social con un espacio.</code></li><li><code class="mono">=B2&amp;&quot; — &quot;&amp;D2 arma la etiqueta Gran Surtido S.A. de C.V. — Zona A.</code></li><li><code class="mono">=C2&amp;&quot; / &quot;&amp;D2 combina el correo y la zona en una sola celda.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para unir pocos textos de forma directa y rápida.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">CONCAT</code><span class="ficha-guion">—</span><span class="ficha-quehace">Une varias celdas o separadores en una sola cadena, más cómodo que &amp; cuando son muchos tramos.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=CONCAT(texto1, texto2, …)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=CONCAT(A2,&quot; — &quot;,B2) → Rosa Medina — Gran Surtido S.A. de C.V.</code></li><li><code class="mono">=CONCAT(B2,&quot; (&quot;,D2,&quot;)&quot;) → Gran Surtido S.A. de C.V. (Zona A)</code></li><li><code class="mono">=CONCAT(A2,&quot; &quot;,B2,&quot; &quot;,C2) une tres celdas con espacios</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para construir etiquetas o textos largos con varias partes.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Texto en Columnas</code><span class="ficha-guion">—</span><span class="ficha-quehace">Separa el contenido de una columna en varias según un separador (coma, espacio, guion).</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Datos &gt; Texto en Columnas</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Un nombre completo en una celda se divide en nombre y apellido con el espacio como separador.</code></li><li><code class="mono">Un código con guiones, como PAP-204-NC-2024, se reparte en cuatro columnas por el guion.</code></li><li><code class="mono">Una lista separada por comas queda en columnas independientes con la opción Delimitados.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Cuando un dato llegó junto en una sola celda y necesitas cada parte por separado.</p>
+</article>
+<h2 class="seccion" id="s-6-ejemplo-resuelto-lista-de-clientes" tabindex="-1">6. Ejemplo resuelto: Lista de Clientes</h2>
+<p>El caso es un registro de <strong>cliente</strong>, no de personal: <strong>Rosa Medina</strong> es el contacto de <strong>Gran Surtido S.A. de C.V.</strong>, la misma razón social que aparece en los vencimientos del Tema 10. No es empleada de la empresa: por eso su correo usa @correo.com y no está en la base de personal del curso. En tu archivo de práctica, las hojas <strong>Clientes_Sucio</strong> y <strong>Clientes_Limpio</strong> llevan este mismo orden de columnas y cierran con <strong>Telefono</strong> en la E; por eso <strong>Zona</strong> queda en la <strong>D</strong> y las cuatro fórmulas de abajo se teclean sin cambiar una letra. Esta primera fila es el ancla de ambas hojas. Para que la minihoja se lea con holgura en pantalla, se muestra en dos recortes: primero A–B y después C–D, con la misma numeración de filas.</p>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Nombre de contacto</strong></td><td class="celda cab-dato"><strong>Razón social</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>  rosa  medina </td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>GRAN SURTIDO S.A. DE C.V.</td></tr></tbody></table></div>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">C</th><th scope="col" class="cab-col">D</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Correo</strong></td><td class="celda cab-dato"><strong>Zona</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span> ROSA.MEDINA@CORREO.COM </td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>zona a</td></tr></tbody></table></div>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Campo</th><th scope="col" class="col-izq">Valor sucio</th><th scope="col" class="col-izq">Valor limpio esperado</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Campo">Nombre de contacto</td><td class="col-izq" data-rotulo="Valor sucio">  rosa  medina </td><td class="col-izq" data-rotulo="Valor limpio esperado">Rosa Medina</td></tr><tr><td class="col-izq" data-rotulo="Campo">Razón social</td><td class="col-izq" data-rotulo="Valor sucio">GRAN SURTIDO S.A. DE C.V.</td><td class="col-izq" data-rotulo="Valor limpio esperado">Gran Surtido S.A. de C.V.</td></tr><tr><td class="col-izq" data-rotulo="Campo">Correo</td><td class="col-izq" data-rotulo="Valor sucio"> ROSA.MEDINA@CORREO.COM </td><td class="col-izq" data-rotulo="Valor limpio esperado">rosa.medina@correo.com</td></tr><tr><td class="col-izq" data-rotulo="Campo">Zona</td><td class="col-izq" data-rotulo="Valor sucio">zona a</td><td class="col-izq" data-rotulo="Valor limpio esperado">Zona A</td></tr></tbody></table></div>
+<p class="linea-formula"><span class="formula-celda">A2</span><code class="mono formula-texto">=NOMPROPIO(ESPACIOS(A2))</code><span class="formula-explica">→ Rosa Medina</span></p>
+<p class="linea-formula"><span class="formula-celda">C2</span><code class="mono formula-texto">=MINUSC(ESPACIOS(C2))</code><span class="formula-explica">→ rosa.medina@correo.com</span></p>
+<p class="linea-formula"><span class="formula-celda">F2</span><code class="mono formula-texto">=A2&amp;&quot; &quot;&amp;B2</code><span class="formula-explica">→ contacto y razón social unidos con un espacio</span></p>
+<p class="linea-formula"><span class="formula-celda">G2</span><code class="mono formula-texto">=CONCAT(A2,&quot; — &quot;,B2)</code><span class="formula-explica">→ etiqueta clara de contacto y razón social</span></p>
+<p>En el archivo de práctica, las columnas fijas son <strong>A</strong> a <strong>E</strong> (Nombre de contacto, Razón social, Correo, Zona y Teléfono). Los valores limpios ya aparecen en la hoja <strong>Clientes_Limpio</strong> en la misma columna: A2 = Rosa Medina, B2 = Gran Surtido S.A. de C.V., C2 = rosa.medina@correo.com y D2 = Zona A. Para practicar las fórmulas sin alterar las hojas del archivo, escríbelas en columnas de apoyo que crees a la derecha, por ejemplo F y G; el texto unido no existe en el archivo, lo creas tú.</p>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Nota.</span> La razón social se corrige a su forma de catálogo: Gran Surtido S.A. de C.V., con la preposición &quot;de&quot; en minúscula. Las funciones de este tema estandarizan el nombre, el correo y la zona; la razón social ya tiene una escritura correcta fija que la hoja limpia espera.</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Con ayuda de la IA (T-A-R-F).</span> Prompt de ejemplo: &quot;Tarea: revisa esta muestra ficticia de clientes y propón reglas de limpieza para estandarizar mayúsculas, espacios y valores de catálogo. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que sugiere qué función usar en cada caso. Formato: tabla con la regla, la función y un ejemplo, sin datos reales. Antes de usar la respuesta, verifica que cada regla produzca los mismos valores limpios que la hoja Clientes_Limpio de tu archivo.&quot;</p></aside>
+<aside class="aviso aviso--alerta" role="note"><p><span class="aviso-etiqueta">Advertencia.</span> Nunca pegues una base real de clientes en una herramienta de IA: sustituye nombres, correos y teléfonos por datos ficticios. Verifica siempre la respuesta antes de aplicarla: la IA puede proponer una función que no existe, un orden equivocado o una regla que cambie el significado del dato.</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Consejo.</span> Usa &amp; cuando sean pocos textos y quieras máxima simplicidad; usa CONCAT cuando la cadena tenga varias partes, porque se lee de una sola vista y evita repetir el separador en cada tramo.</p></aside>
+<aside class="aviso aviso--exito" role="note"><p><span class="aviso-etiqueta">Comprobación.</span> En tu archivo, compara cada celda de Clientes_Limpio con su valor esperado: A2 = Rosa Medina, B2 = Gran Surtido S.A. de C.V., C2 = rosa.medina@correo.com y D2 = Zona A. Escribe =NOMPROPIO(ESPACIOS(A2)) y =MINUSC(ESPACIOS(C2)) en columnas de apoyo: deben devolver exactamente Rosa Medina y rosa.medina@correo.com. La limpieza no cambia el significado del dato: solo quita espacios y normaliza mayúsculas.</p></aside>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Función</th><th scope="col" class="col-izq">Qué hace</th><th scope="col" class="col-izq">Ejemplo</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Función">MAYUSC</td><td class="col-izq" data-rotulo="Qué hace">Todo mayúsculas</td><td class="col-izq" data-rotulo="Ejemplo">=MAYUSC(A2)</td></tr><tr><td class="col-izq" data-rotulo="Función">MINUSC</td><td class="col-izq" data-rotulo="Qué hace">Todo minúsculas</td><td class="col-izq" data-rotulo="Ejemplo">=MINUSC(C2)</td></tr><tr><td class="col-izq" data-rotulo="Función">NOMPROPIO</td><td class="col-izq" data-rotulo="Qué hace">Tipo título</td><td class="col-izq" data-rotulo="Ejemplo">=NOMPROPIO(A2)</td></tr><tr><td class="col-izq" data-rotulo="Función">ESPACIOS</td><td class="col-izq" data-rotulo="Qué hace">Quita espacios extra</td><td class="col-izq" data-rotulo="Ejemplo">=ESPACIOS(A2)</td></tr><tr><td class="col-izq" data-rotulo="Función">&amp; o CONCAT</td><td class="col-izq" data-rotulo="Qué hace">Une texto</td><td class="col-izq" data-rotulo="Ejemplo">=A2&amp;&quot; &quot;&amp;B2</td></tr></tbody></table></div>
+<section class="puntos-clave" id="s-puntos-clave" tabindex="-1"><h2>Puntos clave</h2><ul><li>NOMPROPIO + ESPACIOS estandariza nombres: Rosa Medina.</li><li>MINUSC + ESPACIOS normaliza correos: rosa.medina@correo.com.</li><li>&amp; y CONCAT unen texto; Texto en Columnas separa.</li><li>La IA detecta inconsistencias y propone reglas; verifica cada una.</li><li>Practica siempre con datos ficticios, nunca con una base real.</li></ul></section>
+<section class="referencias" id="s-referencias" tabindex="-1"><h2>Referencias</h2><ul><li>Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li>Microsoft. (2025). Funciones de texto (referencia). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-texto-referencia-cccd86ad-547d-4ea9-a065-7bb697c2a56e</li><li>OpenAI. (2025). ChatGPT [Modelo de lenguaje grande]. https://chat.openai.com</li></ul></section>
+</main>
+</div>
+<footer class="pie">Excel Básico con Inteligencia Artificial · Datos ficticios para práctica.</footer>
+<script>
+(function () {
+  var raiz = document.documentElement;
+  var escala = 1;
+
+  function aplicarEscala() {
+    raiz.style.setProperty('--escala', escala);
+  }
+  var bMas = document.getElementById('texto-mas');
+  var bMenos = document.getElementById('texto-menos');
+  var bTema = document.getElementById('cambiar-tema');
+
+  if (bMas) bMas.addEventListener('click', function () {
+    escala = Math.min(1.5, escala + 0.1); aplicarEscala();
+  });
+  if (bMenos) bMenos.addEventListener('click', function () {
+    escala = Math.max(0.85, escala - 0.1); aplicarEscala();
+  });
+  if (bTema) bTema.addEventListener('click', function () {
+    var oscuro = raiz.getAttribute('data-tema') === 'oscuro';
+    raiz.setAttribute('data-tema', oscuro ? 'claro' : 'oscuro');
+    bTema.setAttribute('aria-pressed', String(!oscuro));
+    bTema.textContent = oscuro ? 'Modo oscuro' : 'Modo claro';
+  });
+
+  // Resalta en el índice la sección visible.
+  var enlaces = Array.prototype.slice.call(
+    document.querySelectorAll('.indice a')
+  );
+  var destinos = enlaces
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if ('IntersectionObserver' in window && destinos.length) {
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        enlaces.forEach(function (a) {
+          a.classList.toggle(
+            'activo', a.getAttribute('href') === '#' + e.target.id
+          );
+        });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    destinos.forEach(function (d) { obs.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>

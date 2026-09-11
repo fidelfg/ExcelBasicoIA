@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 09 — Extracción de texto</title>
+<meta name="description" content="Guía web del Tema 9 del curso Excel Básico con Inteligencia Artificial: IZQUIERDA, DERECHA, EXTRAE, LARGO, HALLAR, TEXTOANTES y TEXTODESPUES con IA para fórmulas anidadas.">
+<style>
+:root {
+  --azul: #854209;
+  --azul-tx: #FFFFFF;
+  --inst-superficie: #854209;
+  --gris-tx: #3A3A3A;
+  --gris-suave: #616B67;
+  --info-bg: #F8DBBE;   --info-ac: #854209;
+  --exito-bg: #D9EADF; --exito-ac: #2E5940;
+  --alerta-bg: #F6E0DC; --alerta-ac: #B23A2E;
+  --captura-bg: #F5E9DC;
+  --formula-bg: #E4E1DC;
+  --formula-bg2: #C2BFBB;
+  --cab-tabla-bg: #854209; --cab-tabla-tx: #FFFFFF;
+  --rejilla-cab: #D4CEC4;
+  --borde: #C6C0B7;
+  --ficha-bg: #FAF7F2;
+  --papel: #FFFFFF;
+  --fondo: #ECEEED;
+  --f-titulo: "Segoe UI Semibold", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-cuerpo: Calibri, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+  --radio: 10px;
+  --escala: 1;
+}
+
+/* Modo oscuro: cambia el papel, NUNCA el código de color de la hoja de cálculo
+   (beige = quien practica escribe; gris = lo completa Excel), para no
+   romper el significado. */
+[data-tema="oscuro"] {
+  --papel: #1E1B18;
+  --fondo: #141210;
+  --gris-tx: #EAE6E0;
+  --gris-suave: #A7B0AB;
+  --azul: #E9A467;
+  --info-bg: #2E2318;
+  --exito-bg: #1B2A22;
+  --alerta-bg: #33201F;
+  --ficha-bg: #26221D;
+  --borde: #443E36;
+  --cab-tabla-bg: #6B3508;
+  --rejilla-cab: #433D34;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: calc(100% * var(--escala)); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--gris-tx);
+  font-family: var(--f-cuerpo);
+  font-size: 1.0rem;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+  background: rgba(133,66,9,.07);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  padding: .05em .35em;
+  /* NO "white-space: nowrap": una sintaxis de menú ("Inicio > Portapapeles >
+     Copiar formato") o un ejemplo largo de ficha_funcion se salen del
+     contenedor sin aviso -- no hacen scroll, se cortan visualmente contra el
+     borde de la tarjeta. Los tokens cortos (un nombre de función, "B2", una
+     clave de procedimiento) no tienen espacios, así que envolver no les
+     cambia el aspecto; solo protege a los que sí son largos. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+[data-tema="oscuro"] .mono { background: rgba(255,255,255,.08); }
+
+.sr-only {
+  position: absolute; left: -9999px; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 100;
+  background: var(--inst-superficie); color: #fff; padding: .6rem 1rem;
+}
+.saltar:focus { left: .5rem; top: .5rem; }
+
+:focus-visible { outline: 3px solid var(--exito-ac); outline-offset: 2px; }
+
+/* ---------- Barra de lectura ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  padding: .55rem 1rem;
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-titulo {
+  font-family: var(--f-titulo); font-weight: 700; color: var(--azul);
+  margin-right: auto; font-size: 0.92rem;
+}
+@media (max-width: 520px) {
+  .barra-titulo { flex: 1 1 100%; }
+}
+.barra button {
+  font-family: var(--f-cuerpo); font-size: 0.85rem;
+  color: var(--gris-tx); background: transparent;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .35rem .8rem; cursor: pointer; min-height: 2.2rem;
+}
+.barra button:hover { background: var(--info-bg); }
+
+/* El salto por ancla no queda pegado a la barra de lectura fija. */
+h2.seccion, section.puntos-clave, section.referencias, section.proc {
+  scroll-margin-top: 4.2rem;
+}
+
+/* ---------- Estructura ---------- */
+.envoltura {
+  max-width: 1180px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+  display: grid; gap: 1.6rem; grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .envoltura { grid-template-columns: 250px minmax(0, 1fr); }
+}
+
+/* ---------- Índice ---------- */
+.indice {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: .9rem 1rem;
+}
+@media (min-width: 1000px) {
+  .indice { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+}
+.indice h2 {
+  font-family: var(--f-titulo); font-size: 0.85rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gris-suave); margin: 0 0 .6rem;
+}
+.indice ol { list-style: none; margin: 0; padding: 0; }
+.indice li { margin: 0 0 .3rem; }
+.indice a {
+  display: block; color: var(--gris-tx); text-decoration: none;
+  font-size: 0.92rem; padding: .3rem .5rem; border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.indice a:hover, .indice a.activo {
+  background: var(--info-bg); border-left-color: var(--azul); color: var(--azul);
+}
+
+/* ---------- Documento ---------- */
+.documento {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 0 0 1.8rem;
+  min-width: 0;
+}
+.documento > *:not(.portada) { margin-left: 1.4rem; margin-right: 1.4rem; }
+@media (max-width: 520px) {
+  .documento > *:not(.portada) { margin-left: 1rem; margin-right: 1rem; }
+}
+.documento p { margin: 0 0 .75rem; }
+p, li, td, th { overflow-wrap: break-word; word-break: break-word; }
+
+/* ---------- Portada ---------- */
+.portada {
+  background: var(--inst-superficie); color: var(--azul-tx);
+  padding: 1.8rem 1.4rem; border-radius: var(--radio) var(--radio) 0 0;
+  margin-bottom: 1.3rem; border-bottom: 5px solid #D66A0F;
+}
+.portada-etiqueta {
+  font-family: var(--f-titulo); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: .1em; color: #F7D9BE; margin: 0 0 .35rem;
+}
+.portada-titulo {
+  font-family: var(--f-titulo); font-size: 1.9rem; line-height: 1.25;
+  margin: 0; color: #fff; font-weight: 700;
+}
+.portada-subtitulo {
+  font-size: 1.0rem; color: #FBE7D6; font-style: italic;
+  margin: .5rem 0 0;
+}
+[data-tema="oscuro"] .portada { background: #5A2D07; }
+
+/* ---------- Secciones ---------- */
+h2.seccion {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 1.7rem 1.4rem .7rem; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--rejilla-cab);
+  scroll-margin-top: 4.5rem;
+}
+
+/* ---------- Cajas de aviso ---------- */
+.aviso {
+  border-left: 5px solid var(--info-ac); border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--info-bg); padding: .85rem 1rem; margin: 0 1.4rem 1rem;
+}
+.aviso p { margin: 0; font-size: 0.92rem; }
+.aviso-etiqueta { font-family: var(--f-titulo); font-weight: 700; color: var(--info-ac); }
+.aviso--exito {
+  background: var(--exito-bg); border-left-color: var(--exito-ac);
+}
+.aviso--exito .aviso-etiqueta { color: var(--exito-ac); }
+.aviso--alerta {
+  background: var(--alerta-bg); border-left-color: var(--alerta-ac);
+  border-left-style: double; border-left-width: 7px;
+}
+.aviso--alerta .aviso-etiqueta { color: var(--alerta-ac); }
+[data-tema="oscuro"] .aviso--exito .aviso-etiqueta { color: #8FBFA0; }
+[data-tema="oscuro"] .aviso--alerta .aviso-etiqueta { color: #E8998C; }
+[data-tema="oscuro"] .aviso-etiqueta { color: #E9A467; }
+
+/* ---------- Listas ---------- */
+.lista { margin: 0 0 1rem; padding-left: 1.2rem; }
+.lista li { margin-bottom: .35rem; }
+
+/* ---------- Línea de fórmula ---------- */
+.linea-formula {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  /* Solo top y bottom, con !important para ganarle a ".documento p" (que es
+     más específico). El margin-left/right NO se toca aquí: debe heredar el
+     de ".documento > *:not(.portada)", o el bloque queda pegado al borde
+     mientras el resto del texto respeta la sangría. Ya pasó una vez: usar el
+     shorthand "margin: 0 0 .45rem !important" ponía left y right en 0 sin
+     querer, y el !important le ganaba a la regla de sangría aunque esta
+     viniera después en la hoja de estilos. */
+  margin-top: 0 !important;
+  margin-bottom: .45rem !important;
+}
+.formula-celda {
+  font-family: var(--f-mono); font-weight: 700; color: var(--azul);
+  min-width: 2.6rem;
+}
+.formula-texto { white-space: normal; word-break: break-word; }
+.formula-explica { color: var(--gris-suave); font-size: 0.92rem; }
+
+/* ---------- Tabla de conceptos ---------- */
+.tabla-envoltura { margin-bottom: 1.1rem; }
+.tabla-conceptos {
+  width: 100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.tabla-conceptos th {
+  background: var(--cab-tabla-bg); color: var(--cab-tabla-tx);
+  font-family: var(--f-titulo); font-weight: 700;
+  padding: .55rem .7rem; border: 1px solid var(--borde);
+}
+.tabla-conceptos td {
+  padding: .5rem .7rem; border: 1px solid var(--borde); vertical-align: top;
+}
+.tabla-conceptos .col-izq { text-align: left; }
+.tabla-conceptos .col-der { text-align: right; }
+.tabla-conceptos .fila-total td { font-weight: 700; }
+
+/* En móvil la tabla se apila y cada celda muestra su encabezado. */
+@media (max-width: 640px) {
+  .tabla-conceptos thead { display: none; }
+  .tabla-conceptos, .tabla-conceptos tbody, .tabla-conceptos tr, .tabla-conceptos td {
+    display: block; width: 100%;
+  }
+  .tabla-conceptos tr {
+    border: 1px solid var(--borde); border-radius: 8px;
+    margin-bottom: .7rem; overflow: visible;
+  }
+  .tabla-conceptos td { border: 0; border-bottom: 1px solid var(--borde); text-align: left !important; }
+  .tabla-conceptos tr td:last-child { border-bottom: 0; }
+  .tabla-conceptos td::before {
+    content: attr(data-rotulo);
+    display: block; font-family: var(--f-titulo); font-weight: 700;
+    font-size: 0.85rem; color: var(--gris-suave); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: .15rem;
+  }
+}
+
+/* ---------- Rejilla de Excel ---------- */
+.rejilla-envoltura {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde); border-radius: 8px; margin-bottom: .8rem;
+}
+.rejilla { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+.rejilla th {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+  padding: .4rem .6rem; border: 1px solid var(--borde);
+}
+.rejilla .cab-fila { width: 2.2rem; }
+.rejilla .esquina { width: 2.2rem; }
+.rejilla td {
+  padding: .45rem .7rem; border: 1px solid var(--borde);
+  background: var(--papel); white-space: nowrap;
+}
+.rejilla td.cab-dato {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+}
+.rejilla .col-izq { text-align: left; }
+.rejilla .col-der { text-align: right; }
+.rejilla .captura { background: var(--captura-bg); color: #3A3A3A; }
+.rejilla .formula { background: var(--formula-bg); color: #3A3A3A; font-family: var(--f-mono); }
+
+/* ---------- Leyenda de colores ---------- */
+.leyenda {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  padding: 0; margin: 0 0 1.1rem; font-size: 0.92rem; color: var(--gris-suave);
+}
+.leyenda li { display: flex; align-items: center; gap: .45rem; }
+.muestra {
+  width: 1.05rem; height: 1.05rem; border-radius: 4px;
+  border: 1px solid var(--borde); display: inline-block; flex: none;
+}
+
+/* ---------- Fichas de función ---------- */
+.ficha {
+  background: var(--ficha-bg); border-left: 4px solid var(--azul);
+  border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: .8rem;
+}
+.ficha-nombre {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+  margin: 0 0 .5rem; font-size: 1.0rem;
+}
+.ficha-nombre .mono { color: var(--azul); font-weight: 700; }
+.ficha-guion { color: var(--gris-suave); }
+.ficha-quehace {
+  font-family: var(--f-cuerpo); font-weight: 400; font-size: 0.92rem;
+  color: var(--gris-tx);
+}
+.ficha-linea { margin: 0 0 .3rem !important; font-size: 0.92rem; }
+.ficha-rotulo { font-weight: 700; color: var(--gris-suave); }
+.ficha-ejemplos { list-style: none; margin: .2rem 0 .4rem; padding-left: .9rem; }
+.ficha-ejemplos li { margin-bottom: .25rem; }
+.ficha-ejemplos li::before { content: "– "; color: var(--gris-suave); }
+
+/* ---------- Procedimientos (ayuda al desempeño) ---------- */
+.proc {
+  border-radius: var(--radio); overflow: hidden; margin: 1.1rem 0 1.4rem;
+  border-left: 4px solid var(--azul); background: var(--ficha-bg);
+  scroll-margin-top: 4.5rem;
+}
+.proc-cab { background: var(--inst-superficie); padding: .8rem 1rem .85rem; }
+.proc-clave { margin: 0 0 .15rem; }
+.proc-clave .mono {
+  color: #F7D9BE; font-size: 0.85rem; font-weight: 700; letter-spacing: .04em;
+}
+.proc-titulo {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.18rem;
+  color: var(--azul-tx); line-height: 1.3;
+}
+.proc-paraque {
+  margin: .3rem 0 0 !important; font-size: 0.92rem; color: #FBE7D6;
+}
+.proc-cuerpo { padding: .8rem 1rem .9rem; }
+.proc-rotulo {
+  margin: .75rem 0 .25rem !important; font-family: var(--f-titulo);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gris-suave);
+}
+.proc-cuerpo .proc-rotulo:first-child, .proc-bloque .proc-rotulo { margin-top: 0 !important; }
+.proc-rotulo--ok { color: var(--exito-ac); }
+.proc-rotulo--falla { color: var(--alerta-ac); }
+.proc-texto { margin: 0 !important; font-size: 0.92rem; }
+.proc .ui, .proc-pasos .ui { font-weight: 700; color: var(--azul); }
+.proc-cab .ui { color: var(--azul-tx); }
+.proc-figura { margin: .7rem 0 .2rem; text-align: center; }
+.proc-figura img {
+  max-width: 100%; height: auto; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--papel);
+}
+.proc-figura figcaption {
+  margin-top: .3rem; font-size: 0.85rem; color: var(--gris-suave);
+  font-style: italic;
+}
+[data-tema="oscuro"] .proc .ui { color: #E9A467; }
+.proc-pasos {
+  margin: .2rem 0 0; padding-left: 0; list-style: none; counter-reset: paso;
+}
+.proc-pasos li {
+  counter-increment: paso; position: relative; padding-left: 2rem;
+  margin-bottom: .4rem; font-size: 0.92rem;
+}
+.proc-pasos li::before {
+  content: counter(paso); position: absolute; left: 0; top: .05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--inst-superficie); color: var(--azul-tx);
+  font-family: var(--f-mono); font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.proc-atajo { margin: .1rem 0 0 !important; }
+.proc-atajo kbd {
+  font-family: var(--f-mono); font-size: 0.95rem;
+  background: var(--papel); border: 1px solid var(--borde);
+  border-bottom-width: 2px; border-radius: 6px; padding: .12rem .5rem;
+  color: var(--gris-tx);
+}
+.proc-bloque { padding: .7rem 1rem; border-top: 1px solid var(--borde); }
+.proc-ok { background: var(--exito-bg); border-left: 5px solid var(--exito-ac); }
+.proc-falla {
+  background: var(--alerta-bg); border-left: 7px double var(--alerta-ac);
+}
+.proc-errores { margin: .25rem 0 0; padding-left: 1.1rem; }
+.proc-errores li { margin-bottom: .3rem; font-size: 0.92rem; }
+.proc-errores li::marker { color: var(--alerta-ac); }
+.proc-nota {
+  margin: 0 !important; padding: .55rem 1rem .7rem;
+  font-size: 0.85rem; color: var(--gris-suave);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 480px) {
+  .proc-cab, .proc-cuerpo, .proc-bloque, .proc-nota { padding-left: .8rem; padding-right: .8rem; }
+}
+
+/* ---------- Puntos clave y referencias ---------- */
+.puntos-clave {
+  background: var(--info-bg); border: 1px solid var(--rejilla-cab);
+  border-radius: var(--radio); padding: 1rem 1.2rem; margin-top: 1.8rem;
+  scroll-margin-top: 4.5rem;
+}
+.puntos-clave h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem;
+}
+.puntos-clave ul { margin: 0; padding-left: 1.2rem; }
+.puntos-clave li { margin-bottom: .4rem; }
+
+.referencias { margin-top: 1.8rem; scroll-margin-top: 4.5rem; }
+.referencias h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--rejilla-cab);
+}
+.referencias ul { list-style: none; margin: 0; padding: 0; }
+.referencias li {
+  font-size: 0.85rem; color: var(--gris-suave);
+  padding-left: 1.2rem; text-indent: -1.2rem; margin-bottom: .5rem;
+}
+
+/* ---------- Pie ---------- */
+.pie {
+  max-width: 1180px; margin: 0 auto; padding: 0 1rem 2rem;
+  font-size: 0.85rem; color: var(--gris-suave); text-align: center;
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  body { background: #fff; }
+  .barra, .indice, .saltar { display: none !important; }
+  .envoltura { display: block; max-width: none; padding: 0; }
+  .documento { border: 0; }
+  .ficha, .aviso, .puntos-clave, .rejilla-envoltura, .proc, tr { break-inside: avoid; }
+  h2.seccion { break-after: avoid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="saltar" href="#documento">Ir al contenido</a>
+<div class="barra" role="toolbar" aria-label="Opciones de lectura"><span class="barra-titulo">Tema 09 — Extracción de texto</span><button type="button" id="texto-menos" aria-label="Reducir el tamaño del texto">A−</button><button type="button" id="texto-mas" aria-label="Aumentar el tamaño del texto">A+</button><button type="button" id="cambiar-tema" aria-pressed="false">Modo oscuro</button></div>
+<div class="envoltura">
+<nav class="indice" aria-label="Contenido de la guía"><h2>Contenido</h2><ol><li><a href="#s-1-funciones-de-extraccion-izquierda-derecha-y-extrae">1. Funciones de extracción: IZQUIERDA, DERECHA y EXTRAE</a></li><li><a href="#s-2-funciones-de-apoyo-largo-y-hallar">2. Funciones de apoyo: LARGO y HALLAR</a></li><li><a href="#s-3-funciones-modernas-textoantes-y-textodespues">3. Funciones modernas: TEXTOANTES y TEXTODESPUES</a></li><li><a href="#s-4-la-ia-para-armar-y-explicar-formulas-anidadas">4. La IA para armar y explicar fórmulas anidadas</a></li><li><a href="#s-5-fichas-de-funciones-y-herramientas-de-extraccion">5. Fichas de funciones y herramientas de extracción</a></li><li><a href="#s-6-ejemplo-resuelto-codigos-de-producto-y-rfc">6. Ejemplo resuelto: Códigos de Producto y RFC</a></li><li><a href="#s-puntos-clave">Puntos clave</a></li><li><a href="#s-referencias">Referencias</a></li></ol></nav>
+<main class="documento" id="documento" tabindex="-1">
+<header class="portada">
+<p class="portada-etiqueta">EXCEL BÁSICO CON IA · PRÁCTICA GUIADA</p>
+<h1 class="portada-titulo">Tema 09 — Extracción de texto</h1>
+<p class="portada-subtitulo">Recortar partes de un texto con IZQUIERDA, DERECHA y EXTRAE, ubicar caracteres con LARGO y HALLAR, usar las modernas TEXTOANTES y TEXTODESPUES, y apoyarte en la IA para armar y explicar fórmulas anidadas sin exponer datos reales.</p>
+</header>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">En breve.</span> En esta guía aprenderás a extraer subcadenas de texto: la familia, el consecutivo y el año de un código de producto con IZQUIERDA, DERECHA y EXTRAE; a medir y ubicar con LARGO y HALLAR; y a recortar por separador con TEXTOANTES y TEXTODESPUES. También usarás la IA para armar una fórmula anidada y explicarla paso a paso, comparándola con la tuya y verificando cada resultado en tu hoja.</p></aside>
+<h2 class="seccion" id="s-1-funciones-de-extraccion-izquierda-derecha-y-extrae" tabindex="-1">1. Funciones de extracción: IZQUIERDA, DERECHA y EXTRAE</h2>
+<p><strong>Extraer</strong> significa sacar un pedazo de un texto guardado en una celda. Es como recortar una etiqueta: puedes tomar el inicio, el final o un tramo del medio, contando los caracteres (letras, números y guiones) uno por uno. Tres funciones cubren los tres recortes: <strong>IZQUIERDA</strong> toma caracteres desde el inicio del texto; <strong>DERECHA</strong> los toma desde el final; y <strong>EXTRAE</strong> toma un tramo desde una posición intermedia, indicando cuántos caracteres quieres.</p>
+<p>Con el código canónico de esta guía, <strong>A2</strong> = <strong>PAP-204-NC-2024</strong>, la familia son las tres primeras letras: <strong>=IZQUIERDA(A2, 3)</strong> devuelve <strong>PAP</strong>. El consecutivo está en medio: <strong>=EXTRAE(A2, 5, 3)</strong> empieza en el carácter 5 y toma 3, por eso devuelve <strong>204</strong>. El año está al final: <strong>=DERECHA(A2, 4)</strong> devuelve <strong>2024</strong>. Los números de posición cuentan desde 1: el primer carácter del texto es la posición 1.</p>
+<h2 class="seccion" id="s-2-funciones-de-apoyo-largo-y-hallar" tabindex="-1">2. Funciones de apoyo: LARGO y HALLAR</h2>
+<p>Para recortar con precisión conviene saber cuánto mide el texto y dónde está el separador. <strong>LARGO</strong> devuelve cuántos caracteres tiene un texto, como contar las letras de una clave antes de archivarla: <strong>=LARGO(A2)</strong> devuelve <strong>15</strong>. <strong>HALLAR</strong> devuelve la posición de un carácter dentro del texto, por ejemplo un guion: <strong>=HALLAR(&quot;-&quot;, A2)</strong> devuelve <strong>4</strong>, porque el primer guion de <strong>PAP-204-NC-2024</strong> es el carácter número 4.</p>
+<p>HALLAR se usa sobre todo para alimentar a EXTRAE: si el consecutivo empieza justo después del primer guion, la fórmula <strong>=EXTRAE(A2, HALLAR(&quot;-&quot;, A2)+1, 3)</strong> busca el guion, le suma 1 para saltarlo y toma 3 caracteres: devuelve <strong>204</strong>. Así no necesitas contar la posición a mano: el propio Excel la localiza.</p>
+<h2 class="seccion" id="s-3-funciones-modernas-textoantes-y-textodespues" tabindex="-1">3. Funciones modernas: TEXTOANTES y TEXTODESPUES</h2>
+<p>Excel 365 y Excel 2024 incluyen dos funciones que recortan por separador y se leen con más facilidad: <strong>TEXTOANTES</strong> toma todo lo que está antes de un separador, y <strong>TEXTODESPUES</strong> toma lo que está después. Se escriben sin acento, tal como Excel las reconoce. Por ejemplo, <strong>=TEXTOANTES(A2, &quot;-&quot;)</strong> devuelve <strong>PAP</strong> y <strong>=TEXTODESPUES(A2, &quot;-&quot;, -1)</strong> devuelve <strong>2024</strong>, porque el -1 indica que se toma lo que hay después del último guion.</p>
+<p>La ventaja frente a EXTRAE con HALLAR es que no cuentas posiciones: solo indicas el separador. Cuando el texto tiene un guion, un espacio o una coma bien definidos, TEXTOANTES y TEXTODESPUES suelen ser más claros de escribir y de leer.</p>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Nota.</span> TEXTOANTES y TEXTODESPUES requieren Microsoft 365 o Excel 2024. Si tu versión no las tiene, usa la alternativa clásica con IZQUIERDA, DERECHA, EXTRAE y HALLAR, que funciona en todas las versiones.</p></aside>
+<h2 class="seccion" id="s-4-la-ia-para-armar-y-explicar-formulas-anidadas" tabindex="-1">4. La IA para armar y explicar fórmulas anidadas</h2>
+<p>Una <strong>fórmula anidada</strong> es una fórmula que usa otra en su interior, como <strong>=EXTRAE(A2, HALLAR(&quot;-&quot;, A2)+1, 3)</strong>. La <strong>IA generativa</strong> puede armarla a partir de una frase en lenguaje cotidiano y explicarla paso a paso: qué hace cada función y por qué se combinan así. En este tema la usas para comparar esa explicación con la tuya y comprobar que ambas lleguen al mismo resultado.</p>
+<p>La regla de privacidad no cambia: la IA solo recibe datos ficticios. Nunca le pegues un RFC, un código, un correo o un número real: un RFC identifica a una persona y no debe salir de tu equipo.</p>
+<h2 class="seccion" id="s-5-fichas-de-funciones-y-herramientas-de-extraccion" tabindex="-1">5. Fichas de funciones y herramientas de extracción</h2>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">IZQUIERDA</code><span class="ficha-guion">—</span><span class="ficha-quehace">Toma los primeros caracteres de un texto, desde el inicio.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=IZQUIERDA(texto, n)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=IZQUIERDA(A2, 3) → PAP</code></li><li><code class="mono">=IZQUIERDA(B2, 4) → LOHA</code></li><li><code class="mono">=IZQUIERDA(&quot;Hola mundo&quot;, 4) → Hola</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para tomar el inicio fijo de un código, una clave o un nombre.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">DERECHA</code><span class="ficha-guion">—</span><span class="ficha-quehace">Toma los últimos caracteres de un texto, desde el final.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=DERECHA(texto, n)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=DERECHA(A2, 4) → 2024</code></li><li><code class="mono">=DERECHA(B2, 3) → AB1</code></li><li><code class="mono">=DERECHA(&quot;2026-08&quot;, 2) → 08</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para tomar el final de un código, como el año o la homoclave.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">EXTRAE</code><span class="ficha-guion">—</span><span class="ficha-quehace">Toma un tramo del medio de un texto desde una posición y con cierta longitud.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=EXTRAE(texto, inicio, n)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=EXTRAE(A2, 5, 3) → 204</code></li><li><code class="mono">=EXTRAE(A2, HALLAR(&quot;-&quot;, A2)+1, 3) → 204</code></li><li><code class="mono">=EXTRAE(B2, 5, 6) → 900315</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para recortar la parte central de un código o de una clave.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">LARGO</code><span class="ficha-guion">—</span><span class="ficha-quehace">Cuenta cuántos caracteres tiene un texto.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=LARGO(texto)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=LARGO(A2) → 15</code></li><li><code class="mono">=LARGO(B2) → 13</code></li><li><code class="mono">=LARGO(&quot;PAP&quot;) → 3</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para saber cuánto mide un texto antes de recortarlo o validarlo.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">HALLAR</code><span class="ficha-guion">—</span><span class="ficha-quehace">Devuelve la posición de un carácter dentro de un texto.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=HALLAR(texto_buscado, texto, [inicio])</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=HALLAR(&quot;-&quot;, A2) → 4</code></li><li><code class="mono">=HALLAR(&quot;-&quot;, A2, 5) → 8</code></li><li><code class="mono">=HALLAR(&quot;-&quot;, A2, 9) → 11</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para localizar un separador y usar su posición dentro de EXTRAE.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">TEXTOANTES</code><span class="ficha-guion">—</span><span class="ficha-quehace">Toma todo lo que está antes de un separador.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=TEXTOANTES(texto, separador)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=TEXTOANTES(A2, &quot;-&quot;) → PAP</code></li><li><code class="mono">=TEXTOANTES(&quot;Ana-López&quot;, &quot;-&quot;) → Ana</code></li><li><code class="mono">=TEXTOANTES(B2, &quot;9&quot;) → LOHA</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para tomar la primera parte de un texto con un separador claro.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">TEXTODESPUES</code><span class="ficha-guion">—</span><span class="ficha-quehace">Toma todo lo que está después de un separador; con -1, después del último.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">=TEXTODESPUES(texto, separador, [instancia])</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">=TEXTODESPUES(A2, &quot;-&quot;, -1) → 2024</code></li><li><code class="mono">=TEXTODESPUES(A2, &quot;-&quot;, 2) → NC-2024</code></li><li><code class="mono">=TEXTODESPUES(&quot;Ana-López&quot;, &quot;-&quot;) → López</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para tomar la parte final de un texto con un separador claro.</p>
+</article>
+<h2 class="seccion" id="s-6-ejemplo-resuelto-codigos-de-producto-y-rfc" tabindex="-1">6. Ejemplo resuelto: Códigos de Producto y RFC</h2>
+<p>El caso trabaja con la hoja <strong>Codigos</strong> del archivo de práctica, que tiene dos columnas: <strong>A</strong> = Codigo_Producto y <strong>B</strong> = RFC. La minihoja de abajo es un recorte de la primera fila, la ancla canónica: <strong>A2</strong> = <strong>PAP-204-NC-2024</strong> y <strong>B2</strong> = <strong>LOHA900315AB1</strong>. El código sigue el patrón <strong>AAA-999-AA-9999</strong>: 15 caracteres con guiones en las posiciones 4, 8 y 11, y las 35 filas de la hoja respetan ese mismo patrón para que las extracciones por posición funcionen en todas.</p>
+<p>El RFC es ficticio: no corresponde a ninguna de las identidades del curso y no identifica a ninguna persona. Es un dato de práctica, como todo lo que aparece en este material.</p>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Codigo_Producto</strong></td><td class="celda cab-dato"><strong>RFC</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>PAP-204-NC-2024</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>LOHA900315AB1</td></tr></tbody></table></div>
+<p>Con esos dos datos de partida, las fórmulas de extracción se escriben en columnas de apoyo que crees a la derecha; todas se verifican sobre <strong>PAP-204-NC-2024</strong> y <strong>LOHA900315AB1</strong>:</p>
+<p class="linea-formula"><span class="formula-celda">Familia</span><code class="mono formula-texto">=IZQUIERDA(A2, 3)</code><span class="formula-explica">→ PAP</span></p>
+<p class="linea-formula"><span class="formula-celda">Consecutivo</span><code class="mono formula-texto">=EXTRAE(A2, 5, 3)</code><span class="formula-explica">→ 204</span></p>
+<p class="linea-formula"><span class="formula-celda">Año</span><code class="mono formula-texto">=DERECHA(A2, 4)</code><span class="formula-explica">→ 2024</span></p>
+<p class="linea-formula"><span class="formula-celda">Posición del guion</span><code class="mono formula-texto">=HALLAR(&quot;-&quot;, A2)</code><span class="formula-explica">→ 4</span></p>
+<p class="linea-formula"><span class="formula-celda">Con HALLAR</span><code class="mono formula-texto">=EXTRAE(A2, HALLAR(&quot;-&quot;, A2)+1, 3)</code><span class="formula-explica">→ 204</span></p>
+<p class="linea-formula"><span class="formula-celda">Cuántos caracteres</span><code class="mono formula-texto">=LARGO(A2)</code><span class="formula-explica">→ 15</span></p>
+<p class="linea-formula"><span class="formula-celda">Antes del guion</span><code class="mono formula-texto">=TEXTOANTES(A2, &quot;-&quot;)</code><span class="formula-explica">→ PAP</span></p>
+<p class="linea-formula"><span class="formula-celda">Tras el último</span><code class="mono formula-texto">=TEXTODESPUES(A2, &quot;-&quot;, -1)</code><span class="formula-explica">→ 2024</span></p>
+<p class="linea-formula"><span class="formula-celda">Homoclave del RFC</span><code class="mono formula-texto">=DERECHA(B2, 3)</code><span class="formula-explica">→ AB1</span></p>
+<p>Compara los dos caminos: el que cuenta posiciones con <strong>EXTRAE</strong> y <strong>HALLAR</strong> y el que usa el separador con <strong>TEXTOANTES</strong> y <strong>TEXTODESPUES</strong>. Ambos devuelven los mismos resultados sobre este código; el segundo suele ser más claro de leer, porque no exige contar en qué posición cae cada guion.</p>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Consejo.</span> Cuando el separador es claro, como el guion de un código, TEXTOANTES y TEXTODESPUES suelen ser más legibles que anidar EXTRAE con HALLAR. Usa el camino por posición cuando quieras un tramo exacto y fijo.</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Con ayuda de la IA (T-A-R-F).</span> Prompt de ejemplo: &quot;Tarea: arma la fórmula que extrae el consecutivo del código PAP-204-NC-2024 y explícala paso a paso. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que explica con pasos sencillos. Formato: la fórmula como texto y su explicación en pasos numerados, sin datos reales. Antes de usar la respuesta, verifica en tu hoja que =EXTRAE(A2, HALLAR(&quot;-&quot;, A2)+1, 3) devuelva 204 y compárala con la fórmula que tú construiste.&quot;</p></aside>
+<aside class="aviso aviso--alerta" role="note"><p><span class="aviso-etiqueta">Advertencia.</span> Nunca pegues un RFC, un código o un correo real en una herramienta de IA: sustitúyelos por datos ficticios. Verifica siempre la respuesta antes de usarla: la IA puede equivocar la posición, el número de caracteres o la función, y un recorte mal contado cambia el resultado.</p></aside>
+<aside class="aviso aviso--exito" role="note"><p><span class="aviso-etiqueta">Comprobación.</span> En tu hoja, escribe las fórmulas en columnas de apoyo y compáralas con lo esperado: =IZQUIERDA(A2, 3) debe dar PAP, =EXTRAE(A2, 5, 3) debe dar 204, =DERECHA(A2, 4) debe dar 2024, =HALLAR(&quot;-&quot;, A2) debe dar 4, =LARGO(A2) debe dar 15 y =DERECHA(B2, 3) debe dar AB1. Si alguna extracción no coincide, revisa la posición y la cantidad de caracteres antes de aceptarla.</p></aside>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Función</th><th scope="col" class="col-izq">Qué toma</th><th scope="col" class="col-izq">Ejemplo</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Función">IZQUIERDA</td><td class="col-izq" data-rotulo="Qué toma">Desde el inicio</td><td class="col-izq" data-rotulo="Ejemplo">=IZQUIERDA(A2, 3)</td></tr><tr><td class="col-izq" data-rotulo="Función">DERECHA</td><td class="col-izq" data-rotulo="Qué toma">Desde el final</td><td class="col-izq" data-rotulo="Ejemplo">=DERECHA(A2, 4)</td></tr><tr><td class="col-izq" data-rotulo="Función">EXTRAE</td><td class="col-izq" data-rotulo="Qué toma">Desde una posición</td><td class="col-izq" data-rotulo="Ejemplo">=EXTRAE(A2, 5, 3)</td></tr><tr><td class="col-izq" data-rotulo="Función">LARGO</td><td class="col-izq" data-rotulo="Qué toma">Cuántos caracteres</td><td class="col-izq" data-rotulo="Ejemplo">=LARGO(A2)</td></tr><tr><td class="col-izq" data-rotulo="Función">HALLAR</td><td class="col-izq" data-rotulo="Qué toma">Posición de un carácter</td><td class="col-izq" data-rotulo="Ejemplo">=HALLAR(&quot;-&quot;, A2)</td></tr><tr><td class="col-izq" data-rotulo="Función">TEXTOANTES</td><td class="col-izq" data-rotulo="Qué toma">Antes del separador</td><td class="col-izq" data-rotulo="Ejemplo">=TEXTOANTES(A2, &quot;-&quot;)</td></tr><tr><td class="col-izq" data-rotulo="Función">TEXTODESPUES</td><td class="col-izq" data-rotulo="Qué toma">Después del separador</td><td class="col-izq" data-rotulo="Ejemplo">=TEXTODESPUES(A2, &quot;-&quot;, -1)</td></tr></tbody></table></div>
+<section class="puntos-clave" id="s-puntos-clave" tabindex="-1"><h2>Puntos clave</h2><ul><li>IZQUIERDA, DERECHA y EXTRAE recortan un texto por posiciones.</li><li>LARGO y HALLAR ayudan a ubicar: cuánto mide y dónde está el separador.</li><li>TEXTOANTES y TEXTODESPUES recortan por separador y son más fáciles de leer.</li><li>Verifica cada recorte en tu hoja: un carácter de más o de menos cambia el resultado.</li><li>Usa solo datos ficticios: un RFC o un código real no se pega en una IA.</li></ul></section>
+<section class="referencias" id="s-referencias" tabindex="-1"><h2>Referencias</h2><ul><li>Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li>Microsoft. (2025). Funciones de texto (referencia). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-texto-referencia-cccd86ad-547d-4ea9-a065-7bb697c2a56e</li><li>OpenAI. (2025). ChatGPT [Modelo de lenguaje grande]. https://chat.openai.com</li></ul></section>
+</main>
+</div>
+<footer class="pie">Excel Básico con Inteligencia Artificial · Datos ficticios para práctica.</footer>
+<script>
+(function () {
+  var raiz = document.documentElement;
+  var escala = 1;
+
+  function aplicarEscala() {
+    raiz.style.setProperty('--escala', escala);
+  }
+  var bMas = document.getElementById('texto-mas');
+  var bMenos = document.getElementById('texto-menos');
+  var bTema = document.getElementById('cambiar-tema');
+
+  if (bMas) bMas.addEventListener('click', function () {
+    escala = Math.min(1.5, escala + 0.1); aplicarEscala();
+  });
+  if (bMenos) bMenos.addEventListener('click', function () {
+    escala = Math.max(0.85, escala - 0.1); aplicarEscala();
+  });
+  if (bTema) bTema.addEventListener('click', function () {
+    var oscuro = raiz.getAttribute('data-tema') === 'oscuro';
+    raiz.setAttribute('data-tema', oscuro ? 'claro' : 'oscuro');
+    bTema.setAttribute('aria-pressed', String(!oscuro));
+    bTema.textContent = oscuro ? 'Modo oscuro' : 'Modo claro';
+  });
+
+  // Resalta en el índice la sección visible.
+  var enlaces = Array.prototype.slice.call(
+    document.querySelectorAll('.indice a')
+  );
+  var destinos = enlaces
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if ('IntersectionObserver' in window && destinos.length) {
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        enlaces.forEach(function (a) {
+          a.classList.toggle(
+            'activo', a.getAttribute('href') === '#' + e.target.id
+          );
+        });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    destinos.forEach(function (d) { obs.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>

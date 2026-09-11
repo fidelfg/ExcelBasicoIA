@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 11 — Visualización de datos</title>
+<meta name="description" content="Guía web del Tema 11 del curso Excel Básico con Inteligencia Artificial: formato condicional, gráficos de columnas, líneas y circular, minigráficos y la IA para elegir el gráfico y redactar hallazgos.">
+<style>
+:root {
+  --azul: #854209;
+  --azul-tx: #FFFFFF;
+  --inst-superficie: #854209;
+  --gris-tx: #3A3A3A;
+  --gris-suave: #616B67;
+  --info-bg: #F8DBBE;   --info-ac: #854209;
+  --exito-bg: #D9EADF; --exito-ac: #2E5940;
+  --alerta-bg: #F6E0DC; --alerta-ac: #B23A2E;
+  --captura-bg: #F5E9DC;
+  --formula-bg: #E4E1DC;
+  --formula-bg2: #C2BFBB;
+  --cab-tabla-bg: #854209; --cab-tabla-tx: #FFFFFF;
+  --rejilla-cab: #D4CEC4;
+  --borde: #C6C0B7;
+  --ficha-bg: #FAF7F2;
+  --papel: #FFFFFF;
+  --fondo: #ECEEED;
+  --f-titulo: "Segoe UI Semibold", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-cuerpo: Calibri, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+  --radio: 10px;
+  --escala: 1;
+}
+
+/* Modo oscuro: cambia el papel, NUNCA el código de color de la hoja de cálculo
+   (beige = quien practica escribe; gris = lo completa Excel), para no
+   romper el significado. */
+[data-tema="oscuro"] {
+  --papel: #1E1B18;
+  --fondo: #141210;
+  --gris-tx: #EAE6E0;
+  --gris-suave: #A7B0AB;
+  --azul: #E9A467;
+  --info-bg: #2E2318;
+  --exito-bg: #1B2A22;
+  --alerta-bg: #33201F;
+  --ficha-bg: #26221D;
+  --borde: #443E36;
+  --cab-tabla-bg: #6B3508;
+  --rejilla-cab: #433D34;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: calc(100% * var(--escala)); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--gris-tx);
+  font-family: var(--f-cuerpo);
+  font-size: 1.0rem;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+  background: rgba(133,66,9,.07);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  padding: .05em .35em;
+  /* NO "white-space: nowrap": una sintaxis de menú ("Inicio > Portapapeles >
+     Copiar formato") o un ejemplo largo de ficha_funcion se salen del
+     contenedor sin aviso -- no hacen scroll, se cortan visualmente contra el
+     borde de la tarjeta. Los tokens cortos (un nombre de función, "B2", una
+     clave de procedimiento) no tienen espacios, así que envolver no les
+     cambia el aspecto; solo protege a los que sí son largos. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+[data-tema="oscuro"] .mono { background: rgba(255,255,255,.08); }
+
+.sr-only {
+  position: absolute; left: -9999px; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 100;
+  background: var(--inst-superficie); color: #fff; padding: .6rem 1rem;
+}
+.saltar:focus { left: .5rem; top: .5rem; }
+
+:focus-visible { outline: 3px solid var(--exito-ac); outline-offset: 2px; }
+
+/* ---------- Barra de lectura ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  padding: .55rem 1rem;
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-titulo {
+  font-family: var(--f-titulo); font-weight: 700; color: var(--azul);
+  margin-right: auto; font-size: 0.92rem;
+}
+@media (max-width: 520px) {
+  .barra-titulo { flex: 1 1 100%; }
+}
+.barra button {
+  font-family: var(--f-cuerpo); font-size: 0.85rem;
+  color: var(--gris-tx); background: transparent;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .35rem .8rem; cursor: pointer; min-height: 2.2rem;
+}
+.barra button:hover { background: var(--info-bg); }
+
+/* El salto por ancla no queda pegado a la barra de lectura fija. */
+h2.seccion, section.puntos-clave, section.referencias, section.proc {
+  scroll-margin-top: 4.2rem;
+}
+
+/* ---------- Estructura ---------- */
+.envoltura {
+  max-width: 1180px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+  display: grid; gap: 1.6rem; grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .envoltura { grid-template-columns: 250px minmax(0, 1fr); }
+}
+
+/* ---------- Índice ---------- */
+.indice {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: .9rem 1rem;
+}
+@media (min-width: 1000px) {
+  .indice { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+}
+.indice h2 {
+  font-family: var(--f-titulo); font-size: 0.85rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gris-suave); margin: 0 0 .6rem;
+}
+.indice ol { list-style: none; margin: 0; padding: 0; }
+.indice li { margin: 0 0 .3rem; }
+.indice a {
+  display: block; color: var(--gris-tx); text-decoration: none;
+  font-size: 0.92rem; padding: .3rem .5rem; border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.indice a:hover, .indice a.activo {
+  background: var(--info-bg); border-left-color: var(--azul); color: var(--azul);
+}
+
+/* ---------- Documento ---------- */
+.documento {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 0 0 1.8rem;
+  min-width: 0;
+}
+.documento > *:not(.portada) { margin-left: 1.4rem; margin-right: 1.4rem; }
+@media (max-width: 520px) {
+  .documento > *:not(.portada) { margin-left: 1rem; margin-right: 1rem; }
+}
+.documento p { margin: 0 0 .75rem; }
+p, li, td, th { overflow-wrap: break-word; word-break: break-word; }
+
+/* ---------- Portada ---------- */
+.portada {
+  background: var(--inst-superficie); color: var(--azul-tx);
+  padding: 1.8rem 1.4rem; border-radius: var(--radio) var(--radio) 0 0;
+  margin-bottom: 1.3rem; border-bottom: 5px solid #D66A0F;
+}
+.portada-etiqueta {
+  font-family: var(--f-titulo); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: .1em; color: #F7D9BE; margin: 0 0 .35rem;
+}
+.portada-titulo {
+  font-family: var(--f-titulo); font-size: 1.9rem; line-height: 1.25;
+  margin: 0; color: #fff; font-weight: 700;
+}
+.portada-subtitulo {
+  font-size: 1.0rem; color: #FBE7D6; font-style: italic;
+  margin: .5rem 0 0;
+}
+[data-tema="oscuro"] .portada { background: #5A2D07; }
+
+/* ---------- Secciones ---------- */
+h2.seccion {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 1.7rem 1.4rem .7rem; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--rejilla-cab);
+  scroll-margin-top: 4.5rem;
+}
+
+/* ---------- Cajas de aviso ---------- */
+.aviso {
+  border-left: 5px solid var(--info-ac); border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--info-bg); padding: .85rem 1rem; margin: 0 1.4rem 1rem;
+}
+.aviso p { margin: 0; font-size: 0.92rem; }
+.aviso-etiqueta { font-family: var(--f-titulo); font-weight: 700; color: var(--info-ac); }
+.aviso--exito {
+  background: var(--exito-bg); border-left-color: var(--exito-ac);
+}
+.aviso--exito .aviso-etiqueta { color: var(--exito-ac); }
+.aviso--alerta {
+  background: var(--alerta-bg); border-left-color: var(--alerta-ac);
+  border-left-style: double; border-left-width: 7px;
+}
+.aviso--alerta .aviso-etiqueta { color: var(--alerta-ac); }
+[data-tema="oscuro"] .aviso--exito .aviso-etiqueta { color: #8FBFA0; }
+[data-tema="oscuro"] .aviso--alerta .aviso-etiqueta { color: #E8998C; }
+[data-tema="oscuro"] .aviso-etiqueta { color: #E9A467; }
+
+/* ---------- Listas ---------- */
+.lista { margin: 0 0 1rem; padding-left: 1.2rem; }
+.lista li { margin-bottom: .35rem; }
+
+/* ---------- Línea de fórmula ---------- */
+.linea-formula {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  /* Solo top y bottom, con !important para ganarle a ".documento p" (que es
+     más específico). El margin-left/right NO se toca aquí: debe heredar el
+     de ".documento > *:not(.portada)", o el bloque queda pegado al borde
+     mientras el resto del texto respeta la sangría. Ya pasó una vez: usar el
+     shorthand "margin: 0 0 .45rem !important" ponía left y right en 0 sin
+     querer, y el !important le ganaba a la regla de sangría aunque esta
+     viniera después en la hoja de estilos. */
+  margin-top: 0 !important;
+  margin-bottom: .45rem !important;
+}
+.formula-celda {
+  font-family: var(--f-mono); font-weight: 700; color: var(--azul);
+  min-width: 2.6rem;
+}
+.formula-texto { white-space: normal; word-break: break-word; }
+.formula-explica { color: var(--gris-suave); font-size: 0.92rem; }
+
+/* ---------- Tabla de conceptos ---------- */
+.tabla-envoltura { margin-bottom: 1.1rem; }
+.tabla-conceptos {
+  width: 100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.tabla-conceptos th {
+  background: var(--cab-tabla-bg); color: var(--cab-tabla-tx);
+  font-family: var(--f-titulo); font-weight: 700;
+  padding: .55rem .7rem; border: 1px solid var(--borde);
+}
+.tabla-conceptos td {
+  padding: .5rem .7rem; border: 1px solid var(--borde); vertical-align: top;
+}
+.tabla-conceptos .col-izq { text-align: left; }
+.tabla-conceptos .col-der { text-align: right; }
+.tabla-conceptos .fila-total td { font-weight: 700; }
+
+/* En móvil la tabla se apila y cada celda muestra su encabezado. */
+@media (max-width: 640px) {
+  .tabla-conceptos thead { display: none; }
+  .tabla-conceptos, .tabla-conceptos tbody, .tabla-conceptos tr, .tabla-conceptos td {
+    display: block; width: 100%;
+  }
+  .tabla-conceptos tr {
+    border: 1px solid var(--borde); border-radius: 8px;
+    margin-bottom: .7rem; overflow: visible;
+  }
+  .tabla-conceptos td { border: 0; border-bottom: 1px solid var(--borde); text-align: left !important; }
+  .tabla-conceptos tr td:last-child { border-bottom: 0; }
+  .tabla-conceptos td::before {
+    content: attr(data-rotulo);
+    display: block; font-family: var(--f-titulo); font-weight: 700;
+    font-size: 0.85rem; color: var(--gris-suave); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: .15rem;
+  }
+}
+
+/* ---------- Rejilla de Excel ---------- */
+.rejilla-envoltura {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde); border-radius: 8px; margin-bottom: .8rem;
+}
+.rejilla { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+.rejilla th {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+  padding: .4rem .6rem; border: 1px solid var(--borde);
+}
+.rejilla .cab-fila { width: 2.2rem; }
+.rejilla .esquina { width: 2.2rem; }
+.rejilla td {
+  padding: .45rem .7rem; border: 1px solid var(--borde);
+  background: var(--papel); white-space: nowrap;
+}
+.rejilla td.cab-dato {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+}
+.rejilla .col-izq { text-align: left; }
+.rejilla .col-der { text-align: right; }
+.rejilla .captura { background: var(--captura-bg); color: #3A3A3A; }
+.rejilla .formula { background: var(--formula-bg); color: #3A3A3A; font-family: var(--f-mono); }
+
+/* ---------- Leyenda de colores ---------- */
+.leyenda {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  padding: 0; margin: 0 0 1.1rem; font-size: 0.92rem; color: var(--gris-suave);
+}
+.leyenda li { display: flex; align-items: center; gap: .45rem; }
+.muestra {
+  width: 1.05rem; height: 1.05rem; border-radius: 4px;
+  border: 1px solid var(--borde); display: inline-block; flex: none;
+}
+
+/* ---------- Fichas de función ---------- */
+.ficha {
+  background: var(--ficha-bg); border-left: 4px solid var(--azul);
+  border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: .8rem;
+}
+.ficha-nombre {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+  margin: 0 0 .5rem; font-size: 1.0rem;
+}
+.ficha-nombre .mono { color: var(--azul); font-weight: 700; }
+.ficha-guion { color: var(--gris-suave); }
+.ficha-quehace {
+  font-family: var(--f-cuerpo); font-weight: 400; font-size: 0.92rem;
+  color: var(--gris-tx);
+}
+.ficha-linea { margin: 0 0 .3rem !important; font-size: 0.92rem; }
+.ficha-rotulo { font-weight: 700; color: var(--gris-suave); }
+.ficha-ejemplos { list-style: none; margin: .2rem 0 .4rem; padding-left: .9rem; }
+.ficha-ejemplos li { margin-bottom: .25rem; }
+.ficha-ejemplos li::before { content: "– "; color: var(--gris-suave); }
+
+/* ---------- Procedimientos (ayuda al desempeño) ---------- */
+.proc {
+  border-radius: var(--radio); overflow: hidden; margin: 1.1rem 0 1.4rem;
+  border-left: 4px solid var(--azul); background: var(--ficha-bg);
+  scroll-margin-top: 4.5rem;
+}
+.proc-cab { background: var(--inst-superficie); padding: .8rem 1rem .85rem; }
+.proc-clave { margin: 0 0 .15rem; }
+.proc-clave .mono {
+  color: #F7D9BE; font-size: 0.85rem; font-weight: 700; letter-spacing: .04em;
+}
+.proc-titulo {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.18rem;
+  color: var(--azul-tx); line-height: 1.3;
+}
+.proc-paraque {
+  margin: .3rem 0 0 !important; font-size: 0.92rem; color: #FBE7D6;
+}
+.proc-cuerpo { padding: .8rem 1rem .9rem; }
+.proc-rotulo {
+  margin: .75rem 0 .25rem !important; font-family: var(--f-titulo);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gris-suave);
+}
+.proc-cuerpo .proc-rotulo:first-child, .proc-bloque .proc-rotulo { margin-top: 0 !important; }
+.proc-rotulo--ok { color: var(--exito-ac); }
+.proc-rotulo--falla { color: var(--alerta-ac); }
+.proc-texto { margin: 0 !important; font-size: 0.92rem; }
+.proc .ui, .proc-pasos .ui { font-weight: 700; color: var(--azul); }
+.proc-cab .ui { color: var(--azul-tx); }
+.proc-figura { margin: .7rem 0 .2rem; text-align: center; }
+.proc-figura img {
+  max-width: 100%; height: auto; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--papel);
+}
+.proc-figura figcaption {
+  margin-top: .3rem; font-size: 0.85rem; color: var(--gris-suave);
+  font-style: italic;
+}
+[data-tema="oscuro"] .proc .ui { color: #E9A467; }
+.proc-pasos {
+  margin: .2rem 0 0; padding-left: 0; list-style: none; counter-reset: paso;
+}
+.proc-pasos li {
+  counter-increment: paso; position: relative; padding-left: 2rem;
+  margin-bottom: .4rem; font-size: 0.92rem;
+}
+.proc-pasos li::before {
+  content: counter(paso); position: absolute; left: 0; top: .05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--inst-superficie); color: var(--azul-tx);
+  font-family: var(--f-mono); font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.proc-atajo { margin: .1rem 0 0 !important; }
+.proc-atajo kbd {
+  font-family: var(--f-mono); font-size: 0.95rem;
+  background: var(--papel); border: 1px solid var(--borde);
+  border-bottom-width: 2px; border-radius: 6px; padding: .12rem .5rem;
+  color: var(--gris-tx);
+}
+.proc-bloque { padding: .7rem 1rem; border-top: 1px solid var(--borde); }
+.proc-ok { background: var(--exito-bg); border-left: 5px solid var(--exito-ac); }
+.proc-falla {
+  background: var(--alerta-bg); border-left: 7px double var(--alerta-ac);
+}
+.proc-errores { margin: .25rem 0 0; padding-left: 1.1rem; }
+.proc-errores li { margin-bottom: .3rem; font-size: 0.92rem; }
+.proc-errores li::marker { color: var(--alerta-ac); }
+.proc-nota {
+  margin: 0 !important; padding: .55rem 1rem .7rem;
+  font-size: 0.85rem; color: var(--gris-suave);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 480px) {
+  .proc-cab, .proc-cuerpo, .proc-bloque, .proc-nota { padding-left: .8rem; padding-right: .8rem; }
+}
+
+/* ---------- Puntos clave y referencias ---------- */
+.puntos-clave {
+  background: var(--info-bg); border: 1px solid var(--rejilla-cab);
+  border-radius: var(--radio); padding: 1rem 1.2rem; margin-top: 1.8rem;
+  scroll-margin-top: 4.5rem;
+}
+.puntos-clave h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem;
+}
+.puntos-clave ul { margin: 0; padding-left: 1.2rem; }
+.puntos-clave li { margin-bottom: .4rem; }
+
+.referencias { margin-top: 1.8rem; scroll-margin-top: 4.5rem; }
+.referencias h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--rejilla-cab);
+}
+.referencias ul { list-style: none; margin: 0; padding: 0; }
+.referencias li {
+  font-size: 0.85rem; color: var(--gris-suave);
+  padding-left: 1.2rem; text-indent: -1.2rem; margin-bottom: .5rem;
+}
+
+/* ---------- Pie ---------- */
+.pie {
+  max-width: 1180px; margin: 0 auto; padding: 0 1rem 2rem;
+  font-size: 0.85rem; color: var(--gris-suave); text-align: center;
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  body { background: #fff; }
+  .barra, .indice, .saltar { display: none !important; }
+  .envoltura { display: block; max-width: none; padding: 0; }
+  .documento { border: 0; }
+  /* Cohesion al paginar. Un titulo nunca queda solo al pie, y una tabla
+     repite su encabezado al cambiar de pagina. */
+  .ficha, .aviso, .puntos-clave, .rejilla-envoltura, .proc, tr,
+  figure, blockquote { break-inside: avoid; }
+
+  h1, h2, h3, h4, h5, h6,
+  .proc > :first-child, figcaption { break-after: avoid; }
+
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+
+  p { orphans: 3; widows: 3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="saltar" href="#documento">Ir al contenido</a>
+<div class="barra" role="toolbar" aria-label="Opciones de lectura"><span class="barra-titulo">Tema 11 — Visualización de datos</span><button type="button" id="texto-menos" aria-label="Reducir el tamaño del texto">A−</button><button type="button" id="texto-mas" aria-label="Aumentar el tamaño del texto">A+</button><button type="button" id="cambiar-tema" aria-pressed="false">Modo oscuro</button></div>
+<div class="envoltura">
+<nav class="indice" aria-label="Contenido de la guía"><h2>Contenido</h2><ol><li><a href="#s-1-formato-condicional-reglas-que-pintan-celdas">1. Formato condicional: reglas que pintan celdas</a></li><li><a href="#s-2-tipos-de-grafico-y-cuando-usarlos">2. Tipos de gráfico y cuándo usarlos</a></li><li><a href="#s-3-minigraficos-tendencias-dentro-de-una-celda">3. Minigráficos: tendencias dentro de una celda</a></li><li><a href="#s-4-la-ia-para-recomendar-el-grafico-y-redactar-hallazgos">4. La IA para recomendar el gráfico y redactar hallazgos</a></li><li><a href="#s-5-fichas-de-herramientas-de-visualizacion">5. Fichas de herramientas de visualización</a></li><li><a href="#s-6-ejemplo-resuelto-dashboard-sencillo">6. Ejemplo resuelto: Dashboard Sencillo</a></li><li><a href="#s-puntos-clave">Puntos clave</a></li><li><a href="#s-referencias">Referencias</a></li></ol></nav>
+<main class="documento" id="documento" tabindex="-1">
+<header class="portada">
+<p class="portada-etiqueta">EXCEL BÁSICO CON IA · PRÁCTICA GUIADA</p>
+<h1 class="portada-titulo">Tema 11 — Visualización de datos</h1>
+<p class="portada-subtitulo">Comunicar los datos con formato condicional, gráficos y minigráficos, y usar la IA para elegir el gráfico adecuado y redactar hallazgos verificables.</p>
+</header>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">En breve.</span> En esta guía aprenderás a comunicar datos con tres herramientas: el formato condicional pinta celdas cuando cumplen una regla, los gráficos comparan valores o muestran proporciones, y los minigráficos resumen una tendencia dentro de una celda. También usarás la IA para elegir el gráfico adecuado y redactar un texto breve de hallazgos, y verificarás cada cifra contra la tabla.</p></aside>
+<h2 class="seccion" id="s-1-formato-condicional-reglas-que-pintan-celdas" tabindex="-1">1. Formato condicional: reglas que pintan celdas</h2>
+<p>El <strong>formato condicional</strong> es una regla que cambia la apariencia de una celda solo cuando se cumple una condición. Es como un semáforo que enciende una luz cuando algo llama la atención: la celda se pinta sola si el valor supera un límite, si es igual a otro o si cae dentro de una escala. Las reglas más usadas son mayor que (&gt;), menor que (&lt;) e igual a (=), y las escalas de color, que van de un tono claro a uno intenso según el valor.</p>
+<p>En el caso de esta guía, la regla <strong>Mayor que $5,000.00</strong> aplicada sobre la columna Gastos pinta con relleno terracota tenue (F6E0DC) las celdas que superan ese límite. El color nunca comunica solo: la regla se revisa en <strong>Inicio &gt; Formato condicional &gt; Administrar reglas</strong> y la cantidad de celdas resaltadas es la comprobación.</p>
+<h2 class="seccion" id="s-2-tipos-de-grafico-y-cuando-usarlos" tabindex="-1">2. Tipos de gráfico y cuándo usarlos</h2>
+<p>Un <strong>gráfico</strong> es un dibujo que representa los números de una tabla para compararlos de un vistazo. Cada tipo responde una pregunta distinta: las <strong>columnas</strong> sirven para comparar valores entre categorías o meses; las <strong>líneas</strong> muestran la tendencia de un valor en el tiempo; y el <strong>circular</strong> muestra qué parte del total representa cada categoría, como las rebanadas de un pastel.</p>
+<p>En este tema el gráfico de columnas compara las ventas de los seis meses y el circular muestra la proporción de cada categoría de gastos. Elige el tipo por la pregunta que quieres responder, no por el que se vea más llamativo.</p>
+<h2 class="seccion" id="s-3-minigraficos-tendencias-dentro-de-una-celda" tabindex="-1">3. Minigráficos: tendencias dentro de una celda</h2>
+<p>Un <strong>minigráfico</strong> es un gráfico diminuto que vive dentro de una sola celda. Es como un termómetro pequeño al lado del dato: no ocupa un objeto aparte, pero deja ver la tendencia de una fila completa. Cada minigráfico usa los seis meses de una sola categoría, por eso se crea uno por categoría en su propia celda.</p>
+<h2 class="seccion" id="s-4-la-ia-para-recomendar-el-grafico-y-redactar-hallazgos" tabindex="-1">4. La IA para recomendar el gráfico y redactar hallazgos</h2>
+<p>La <strong>IA generativa</strong> puede recomendarte el tipo de gráfico adecuado para tu pregunta y redactar un párrafo breve de hallazgos. Pídele la respuesta con la estructura T-A-R-F (Tarea, Audiencia, Rol, Formato) y recuerda que toda cifra del párrafo debe cotejarse contra la tabla: la IA puede equivocar un valor o inventar una conclusión, así que la verificación es parte del trabajo, no un paso opcional.</p>
+<p>La regla de privacidad no cambia: la IA solo recibe datos ficticios. Nunca le pegues importes, nombres ni información interna real.</p>
+<h2 class="seccion" id="s-5-fichas-de-herramientas-de-visualizacion" tabindex="-1">5. Fichas de herramientas de visualización</h2>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Formato Condicional</code><span class="ficha-guion">—</span><span class="ficha-quehace">Pinta celdas automáticamente cuando cumplen una regla que tú defines.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Inicio &gt; Formato condicional &gt; Reglas de resaltar celdas</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Mayor que 5000 sobre C2:C7 resalta Enero, Marzo, Abril y Junio.</code></li><li><code class="mono">Igual a sobre E2:E5 destaca una categoría, por ejemplo Viáticos.</code></li><li><code class="mono">Escalas de color sobre B2:B7 muestran las ventas de menor a mayor.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para que lo importante salte a la vista sin revisar celda por celda.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Gráfico de columnas</code><span class="ficha-guion">—</span><span class="ficha-quehace">Compara valores con barras verticales.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Insertar &gt; Gráficos &gt; Columna</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Selecciona A1:B7 e inserta un gráfico de columnas para comparar las ventas por mes.</code></li><li><code class="mono">El gráfico de columnas deja ver que Junio es el mes más alto.</code></li><li><code class="mono">Comparar los gastos de cada mes con barras muestra los picos de un vistazo.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para comparar categorías o periodos entre sí.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Gráfico de líneas</code><span class="ficha-guion">—</span><span class="ficha-quehace">Muestra la tendencia de un valor en el tiempo con una línea.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Insertar &gt; Gráficos &gt; Línea</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">La línea de ventas de Enero a Junio muestra si la tendencia sube o baja.</code></li><li><code class="mono">Una línea de dos series permite comparar ventas y gastos mes a mes.</code></li><li><code class="mono">Si un valor baja dos meses seguidos, la línea lo hace visible.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para mostrar evolución en el tiempo.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Gráfico circular</code><span class="ficha-guion">—</span><span class="ficha-quehace">Muestra qué parte del total representa cada categoría.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Insertar &gt; Gráficos &gt; Circular</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Selecciona E1:F5 (categorías e importes) para ver la proporción de cada gasto.</code></li><li><code class="mono">El sector de Viáticos es el más grande de los cuatro.</code></li><li><code class="mono">El circular sirve para ver qué categoría pesa más en el total.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para mostrar proporciones o partes de un todo.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Minigráficos</code><span class="ficha-guion">—</span><span class="ficha-quehace">Dibuja un gráfico diminuto dentro de una celda.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Insertar &gt; Minigráficos &gt; Línea</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Cada minigráfico usa los seis meses de una sola categoría.</code></li><li><code class="mono">El minigráfico de Cómputo muestra una tendencia ascendente de $6,500.00 a $8,200.00.</code></li><li><code class="mono">Se crea uno por categoría y cada uno cabe en su propia celda.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para mostrar tendencias compactas junto a los datos.</p>
+</article>
+<h2 class="seccion" id="s-6-ejemplo-resuelto-dashboard-sencillo" tabindex="-1">6. Ejemplo resuelto: Dashboard Sencillo</h2>
+<p>Los tres casos de este tema son resúmenes, no filas crudas: en el archivo de práctica viven en una hoja llamada <strong>Resumen_Visual</strong>, con estos mismos valores fijos. Las hojas <strong>Gastos</strong> y <strong>Ventas</strong> traen los registros completos, con los que puedes repetir cada ejercicio a mayor escala.</p>
+<p>En esta guía los gráficos no aparecen dibujados: se describen como pasos y se muestra la tabla base, que es lo que la persona usa para construirlos en su archivo.</p>
+<p><strong>Caso A: ventas y gastos por mes.</strong> El primer bloque del resumen compara las ventas y los gastos de seis meses. Son datos conocidos, así que van en celdas beige.</p>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th><th scope="col" class="cab-col">C</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Mes</strong></td><td class="celda cab-dato"><strong>Ventas</strong></td><td class="celda cab-dato"><strong>Gastos</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Enero</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$18,500.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$6,200.00</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Febrero</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$21,300.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,800.00</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Marzo</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$19,750.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$7,100.00</td></tr><tr><th scope="row" class="cab-fila">5</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Abril</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$23,000.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$5,600.00</td></tr><tr><th scope="row" class="cab-fila">6</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Mayo</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$20,400.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,300.00</td></tr><tr><th scope="row" class="cab-fila">7</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Junio</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$24,100.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$6,400.00</td></tr></tbody></table></div>
+<p>Sobre la columna Gastos (<strong>C2:C7</strong>) se aplica la regla <strong>Mayor que $5,000.00</strong>: resalta Enero, Marzo, Abril y Junio. Para crear el gráfico de columnas <strong>Ventas por Mes</strong>, selecciona <strong>A1:B7</strong> y elige <strong>Insertar &gt; Gráficos &gt; Columna</strong>. El gráfico compara las ventas de los seis meses y deja ver que Junio es el más alto.</p>
+<p><strong>Caso B: gastos por categoría.</strong> El segundo bloque reúne los gastos por categoría para el gráfico circular. En <strong>Resumen_Visual</strong> vive en las columnas <strong>E</strong> y <strong>F</strong>, así que aquí se muestra con sus letras reales y la misma leyenda de colores del Caso A.</p>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">E</th><th scope="col" class="cab-col">F</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Categoria</strong></td><td class="celda cab-dato"><strong>Importe</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Viáticos</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,500.00</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Papelería</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$1,250.00</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Servicios</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$3,100.00</td></tr><tr><th scope="row" class="cab-fila">5</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Mantenimiento</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$2,050.00</td></tr></tbody></table></div>
+<p>Para crear el gráfico circular, selecciona <strong>E1:F5</strong> y elige <strong>Insertar &gt; Gráficos &gt; Circular</strong>: muestra la proporción de cada categoría en el total de gastos.</p>
+<p><strong>Caso C: tabla base de los minigráficos.</strong> El tercer bloque lleva cuatro categorías por los seis meses, con los meses abreviados como encabezado. La fila de <strong>Total mensual</strong> es la única fórmula viva del bloque: Excel la calcula sumando cada mes, y sus resultados coinciden con las ventas del Caso A. Para que se lea con holgura, el bloque se muestra en dos recortes con las mismas letras de la hoja: A–D y E–G. Ambos conservan el mismo orden de filas: Papelería, Cómputo, Consumibles, Mobiliario y Total mensual.</p>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes. — aquí, con una fórmula.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th><th scope="col" class="cab-col">C</th><th scope="col" class="cab-col">D</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Categoria</strong></td><td class="celda cab-dato"><strong>Ene</strong></td><td class="celda cab-dato"><strong>Feb</strong></td><td class="celda cab-dato"><strong>Mar</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Papelería</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$2,500.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$3,100.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$2,800.00</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Cómputo</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$6,500.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$7,200.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$6,800.00</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Consumibles</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,000.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,600.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,250.00</td></tr><tr><th scope="row" class="cab-fila">5</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Mobiliario</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$5,500.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$6,400.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$5,900.00</td></tr><tr><th scope="row" class="cab-fila">6</th><td class="celda col-izq">Total mensual</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$18,500.00</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$21,300.00</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$19,750.00</td></tr></tbody></table></div>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">E</th><th scope="col" class="cab-col">F</th><th scope="col" class="cab-col">G</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Abr</strong></td><td class="celda cab-dato"><strong>May</strong></td><td class="celda cab-dato"><strong>Jun</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$3,500.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$3,000.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$3,900.00</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$7,800.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$7,100.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$8,200.00</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,800.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,300.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$5,100.00</td></tr><tr><th scope="row" class="cab-fila">5</th><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$6,900.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$6,000.00</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$6,900.00</td></tr><tr><th scope="row" class="cab-fila">6</th><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$23,000.00</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$20,400.00</td><td class="celda formula col-der"><span class="sr-only">Celda que completa Excel. </span>$24,100.00</td></tr></tbody></table></div>
+<p>Para crear un minigráfico, elige <strong>Insertar &gt; Minigráficos &gt; Línea</strong> y selecciona la fila de una sola categoría, por ejemplo <strong>B2:G2</strong> para Papelería. Cada minigráfico usa los seis meses de una sola categoría y se crea uno por categoría en una celda de su lado.</p>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Con ayuda de la IA (T-A-R-F).</span> Prompt de ejemplo: &quot;Tarea: recomienda el gráfico adecuado para comparar las ventas por mes y redacta un párrafo breve de hallazgos. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que explica con pasos sencillos. Formato: el tipo de gráfico, los pasos para crearlo y un párrafo de hallazgos con cifras, usando solo datos ficticios. Antes de usar la respuesta, verifica cada cifra del párrafo contra la tabla, por ejemplo que Junio sea el mes más alto con $24,100.00, y comprueba que el gráfico recomendado responda la pregunta.&quot;</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Consejo.</span> Elige el gráfico por la pregunta que respondes: comparar → columnas; evolución → líneas; partes de un todo → circular.</p></aside>
+<aside class="aviso aviso--exito" role="note"><p><span class="aviso-etiqueta">Comprobación.</span> Comprueba en tu archivo: la regla Mayor que $5,000.00 aplicada sobre Gastos (C2:C7) resalta exactamente cuatro celdas: Enero, Marzo, Abril y Junio. Si pinta otra cantidad, revisa la regla o el rango. Junio tiene la venta más alta, $24,100.00, y se comprueba en la tabla y en el gráfico. El circular muestra la proporción de cada categoría y cada minigráfico usa los seis meses de una sola categoría.</p></aside>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Quiero mostrar</th><th scope="col" class="col-izq">Gráfico recomendado</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Quiero mostrar">Comparar categorías</td><td class="col-izq" data-rotulo="Gráfico recomendado">Gráfico de columnas</td></tr><tr><td class="col-izq" data-rotulo="Quiero mostrar">Tendencia en el tiempo</td><td class="col-izq" data-rotulo="Gráfico recomendado">Gráfico de líneas</td></tr><tr><td class="col-izq" data-rotulo="Quiero mostrar">Proporciones de un total</td><td class="col-izq" data-rotulo="Gráfico recomendado">Gráfico circular</td></tr><tr><td class="col-izq" data-rotulo="Quiero mostrar">Tendencia mínima en una celda</td><td class="col-izq" data-rotulo="Gráfico recomendado">Minigráfico</td></tr></tbody></table></div>
+<section class="puntos-clave" id="s-puntos-clave" tabindex="-1"><h2>Puntos clave</h2><ul><li>El formato condicional resalta lo importante sin revisar celda por celda.</li><li>Cada gráfico responde una pregunta distinta: columnas comparan, líneas muestran tendencia, el circular muestra proporciones.</li><li>Los minigráficos caben en una celda y usan los datos de una sola categoría.</li><li>Verifica el texto de hallazgos que redacta la IA contra los números de la tabla.</li><li>Usa siempre datos ficticios al practicar con IA.</li></ul></section>
+<section class="referencias" id="s-referencias" tabindex="-1"><h2>Referencias</h2><ul><li>Microsoft. (2025). Crear un gráfico de principio a fin. Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/crear-un-gr%C3%A1fico-de-principio-a-fin-0baf399e-dd61-4e18-8a73-b3fd5d5680c2</li><li>Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li>OpenAI. (2025). ChatGPT [Modelo de lenguaje grande]. https://chat.openai.com</li></ul></section>
+</main>
+</div>
+<footer class="pie">Excel Básico con Inteligencia Artificial · Datos ficticios para práctica.</footer>
+<script>
+(function () {
+  var raiz = document.documentElement;
+  var escala = 1;
+
+  function aplicarEscala() {
+    raiz.style.setProperty('--escala', escala);
+  }
+  var bMas = document.getElementById('texto-mas');
+  var bMenos = document.getElementById('texto-menos');
+  var bTema = document.getElementById('cambiar-tema');
+
+  if (bMas) bMas.addEventListener('click', function () {
+    escala = Math.min(1.5, escala + 0.1); aplicarEscala();
+  });
+  if (bMenos) bMenos.addEventListener('click', function () {
+    escala = Math.max(0.85, escala - 0.1); aplicarEscala();
+  });
+  if (bTema) bTema.addEventListener('click', function () {
+    var oscuro = raiz.getAttribute('data-tema') === 'oscuro';
+    raiz.setAttribute('data-tema', oscuro ? 'claro' : 'oscuro');
+    bTema.setAttribute('aria-pressed', String(!oscuro));
+    bTema.textContent = oscuro ? 'Modo oscuro' : 'Modo claro';
+  });
+
+  // Resalta en el índice la sección visible.
+  var enlaces = Array.prototype.slice.call(
+    document.querySelectorAll('.indice a')
+  );
+  var destinos = enlaces
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if ('IntersectionObserver' in window && destinos.length) {
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        enlaces.forEach(function (a) {
+          a.classList.toggle(
+            'activo', a.getAttribute('href') === '#' + e.target.id
+          );
+        });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    destinos.forEach(function (d) { obs.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 07 — Organización de datos y lógica</title>
+<meta name="description" content="Guía web del Tema 7 del curso Excel Básico con Inteligencia Artificial: ordenar simple y multinivel, filtros con operadores lógicos, quitar duplicados y la IA para convertir preguntas en criterios.">
+<style>
+:root {
+  --azul: #854209;
+  --azul-tx: #FFFFFF;
+  --inst-superficie: #854209;
+  --gris-tx: #3A3A3A;
+  --gris-suave: #616B67;
+  --info-bg: #F8DBBE;   --info-ac: #854209;
+  --exito-bg: #D9EADF; --exito-ac: #2E5940;
+  --alerta-bg: #F6E0DC; --alerta-ac: #B23A2E;
+  --captura-bg: #F5E9DC;
+  --formula-bg: #E4E1DC;
+  --formula-bg2: #C2BFBB;
+  --cab-tabla-bg: #854209; --cab-tabla-tx: #FFFFFF;
+  --rejilla-cab: #D4CEC4;
+  --borde: #C6C0B7;
+  --ficha-bg: #FAF7F2;
+  --papel: #FFFFFF;
+  --fondo: #ECEEED;
+  --f-titulo: "Segoe UI Semibold", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-cuerpo: Calibri, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+  --radio: 10px;
+  --escala: 1;
+}
+
+/* Modo oscuro: cambia el papel, NUNCA el código de color de la hoja de cálculo
+   (beige = quien practica escribe; gris = lo completa Excel), para no
+   romper el significado. */
+[data-tema="oscuro"] {
+  --papel: #1E1B18;
+  --fondo: #141210;
+  --gris-tx: #EAE6E0;
+  --gris-suave: #A7B0AB;
+  --azul: #E9A467;
+  --info-bg: #2E2318;
+  --exito-bg: #1B2A22;
+  --alerta-bg: #33201F;
+  --ficha-bg: #26221D;
+  --borde: #443E36;
+  --cab-tabla-bg: #6B3508;
+  --rejilla-cab: #433D34;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: calc(100% * var(--escala)); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--gris-tx);
+  font-family: var(--f-cuerpo);
+  font-size: 1.0rem;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+  background: rgba(133,66,9,.07);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  padding: .05em .35em;
+  /* NO "white-space: nowrap": una sintaxis de menú ("Inicio > Portapapeles >
+     Copiar formato") o un ejemplo largo de ficha_funcion se salen del
+     contenedor sin aviso -- no hacen scroll, se cortan visualmente contra el
+     borde de la tarjeta. Los tokens cortos (un nombre de función, "B2", una
+     clave de procedimiento) no tienen espacios, así que envolver no les
+     cambia el aspecto; solo protege a los que sí son largos. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+[data-tema="oscuro"] .mono { background: rgba(255,255,255,.08); }
+
+.sr-only {
+  position: absolute; left: -9999px; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 100;
+  background: var(--inst-superficie); color: #fff; padding: .6rem 1rem;
+}
+.saltar:focus { left: .5rem; top: .5rem; }
+
+:focus-visible { outline: 3px solid var(--exito-ac); outline-offset: 2px; }
+
+/* ---------- Barra de lectura ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  padding: .55rem 1rem;
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-titulo {
+  font-family: var(--f-titulo); font-weight: 700; color: var(--azul);
+  margin-right: auto; font-size: 0.92rem;
+}
+@media (max-width: 520px) {
+  .barra-titulo { flex: 1 1 100%; }
+}
+.barra button {
+  font-family: var(--f-cuerpo); font-size: 0.85rem;
+  color: var(--gris-tx); background: transparent;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .35rem .8rem; cursor: pointer; min-height: 2.2rem;
+}
+.barra button:hover { background: var(--info-bg); }
+
+/* El salto por ancla no queda pegado a la barra de lectura fija. */
+h2.seccion, section.puntos-clave, section.referencias, section.proc {
+  scroll-margin-top: 4.2rem;
+}
+
+/* ---------- Estructura ---------- */
+.envoltura {
+  max-width: 1180px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+  display: grid; gap: 1.6rem; grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .envoltura { grid-template-columns: 250px minmax(0, 1fr); }
+}
+
+/* ---------- Índice ---------- */
+.indice {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: .9rem 1rem;
+}
+@media (min-width: 1000px) {
+  .indice { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+}
+.indice h2 {
+  font-family: var(--f-titulo); font-size: 0.85rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gris-suave); margin: 0 0 .6rem;
+}
+.indice ol { list-style: none; margin: 0; padding: 0; }
+.indice li { margin: 0 0 .3rem; }
+.indice a {
+  display: block; color: var(--gris-tx); text-decoration: none;
+  font-size: 0.92rem; padding: .3rem .5rem; border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.indice a:hover, .indice a.activo {
+  background: var(--info-bg); border-left-color: var(--azul); color: var(--azul);
+}
+
+/* ---------- Documento ---------- */
+.documento {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 0 0 1.8rem;
+  min-width: 0;
+}
+.documento > *:not(.portada) { margin-left: 1.4rem; margin-right: 1.4rem; }
+@media (max-width: 520px) {
+  .documento > *:not(.portada) { margin-left: 1rem; margin-right: 1rem; }
+}
+.documento p { margin: 0 0 .75rem; }
+p, li, td, th { overflow-wrap: break-word; word-break: break-word; }
+
+/* ---------- Portada ---------- */
+.portada {
+  background: var(--inst-superficie); color: var(--azul-tx);
+  padding: 1.8rem 1.4rem; border-radius: var(--radio) var(--radio) 0 0;
+  margin-bottom: 1.3rem; border-bottom: 5px solid #D66A0F;
+}
+.portada-etiqueta {
+  font-family: var(--f-titulo); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: .1em; color: #F7D9BE; margin: 0 0 .35rem;
+}
+.portada-titulo {
+  font-family: var(--f-titulo); font-size: 1.9rem; line-height: 1.25;
+  margin: 0; color: #fff; font-weight: 700;
+}
+.portada-subtitulo {
+  font-size: 1.0rem; color: #FBE7D6; font-style: italic;
+  margin: .5rem 0 0;
+}
+[data-tema="oscuro"] .portada { background: #5A2D07; }
+
+/* ---------- Secciones ---------- */
+h2.seccion {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 1.7rem 1.4rem .7rem; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--rejilla-cab);
+  scroll-margin-top: 4.5rem;
+}
+
+/* ---------- Cajas de aviso ---------- */
+.aviso {
+  border-left: 5px solid var(--info-ac); border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--info-bg); padding: .85rem 1rem; margin: 0 1.4rem 1rem;
+}
+.aviso p { margin: 0; font-size: 0.92rem; }
+.aviso-etiqueta { font-family: var(--f-titulo); font-weight: 700; color: var(--info-ac); }
+.aviso--exito {
+  background: var(--exito-bg); border-left-color: var(--exito-ac);
+}
+.aviso--exito .aviso-etiqueta { color: var(--exito-ac); }
+.aviso--alerta {
+  background: var(--alerta-bg); border-left-color: var(--alerta-ac);
+  border-left-style: double; border-left-width: 7px;
+}
+.aviso--alerta .aviso-etiqueta { color: var(--alerta-ac); }
+[data-tema="oscuro"] .aviso--exito .aviso-etiqueta { color: #8FBFA0; }
+[data-tema="oscuro"] .aviso--alerta .aviso-etiqueta { color: #E8998C; }
+[data-tema="oscuro"] .aviso-etiqueta { color: #E9A467; }
+
+/* ---------- Listas ---------- */
+.lista { margin: 0 0 1rem; padding-left: 1.2rem; }
+.lista li { margin-bottom: .35rem; }
+
+/* ---------- Línea de fórmula ---------- */
+.linea-formula {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  /* Solo top y bottom, con !important para ganarle a ".documento p" (que es
+     más específico). El margin-left/right NO se toca aquí: debe heredar el
+     de ".documento > *:not(.portada)", o el bloque queda pegado al borde
+     mientras el resto del texto respeta la sangría. Ya pasó una vez: usar el
+     shorthand "margin: 0 0 .45rem !important" ponía left y right en 0 sin
+     querer, y el !important le ganaba a la regla de sangría aunque esta
+     viniera después en la hoja de estilos. */
+  margin-top: 0 !important;
+  margin-bottom: .45rem !important;
+}
+.formula-celda {
+  font-family: var(--f-mono); font-weight: 700; color: var(--azul);
+  min-width: 2.6rem;
+}
+.formula-texto { white-space: normal; word-break: break-word; }
+.formula-explica { color: var(--gris-suave); font-size: 0.92rem; }
+
+/* ---------- Tabla de conceptos ---------- */
+.tabla-envoltura { margin-bottom: 1.1rem; }
+.tabla-conceptos {
+  width: 100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.tabla-conceptos th {
+  background: var(--cab-tabla-bg); color: var(--cab-tabla-tx);
+  font-family: var(--f-titulo); font-weight: 700;
+  padding: .55rem .7rem; border: 1px solid var(--borde);
+}
+.tabla-conceptos td {
+  padding: .5rem .7rem; border: 1px solid var(--borde); vertical-align: top;
+}
+.tabla-conceptos .col-izq { text-align: left; }
+.tabla-conceptos .col-der { text-align: right; }
+.tabla-conceptos .fila-total td { font-weight: 700; }
+
+/* En móvil la tabla se apila y cada celda muestra su encabezado. */
+@media (max-width: 640px) {
+  .tabla-conceptos thead { display: none; }
+  .tabla-conceptos, .tabla-conceptos tbody, .tabla-conceptos tr, .tabla-conceptos td {
+    display: block; width: 100%;
+  }
+  .tabla-conceptos tr {
+    border: 1px solid var(--borde); border-radius: 8px;
+    margin-bottom: .7rem; overflow: visible;
+  }
+  .tabla-conceptos td { border: 0; border-bottom: 1px solid var(--borde); text-align: left !important; }
+  .tabla-conceptos tr td:last-child { border-bottom: 0; }
+  .tabla-conceptos td::before {
+    content: attr(data-rotulo);
+    display: block; font-family: var(--f-titulo); font-weight: 700;
+    font-size: 0.85rem; color: var(--gris-suave); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: .15rem;
+  }
+}
+
+/* ---------- Rejilla de Excel ---------- */
+.rejilla-envoltura {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde); border-radius: 8px; margin-bottom: .8rem;
+}
+.rejilla { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+.rejilla th {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+  padding: .4rem .6rem; border: 1px solid var(--borde);
+}
+.rejilla .cab-fila { width: 2.2rem; }
+.rejilla .esquina { width: 2.2rem; }
+.rejilla td {
+  padding: .45rem .7rem; border: 1px solid var(--borde);
+  background: var(--papel); white-space: nowrap;
+}
+.rejilla td.cab-dato {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+}
+.rejilla .col-izq { text-align: left; }
+.rejilla .col-der { text-align: right; }
+.rejilla .captura { background: var(--captura-bg); color: #3A3A3A; }
+.rejilla .formula { background: var(--formula-bg); color: #3A3A3A; font-family: var(--f-mono); }
+
+/* ---------- Leyenda de colores ---------- */
+.leyenda {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  padding: 0; margin: 0 0 1.1rem; font-size: 0.92rem; color: var(--gris-suave);
+}
+.leyenda li { display: flex; align-items: center; gap: .45rem; }
+.muestra {
+  width: 1.05rem; height: 1.05rem; border-radius: 4px;
+  border: 1px solid var(--borde); display: inline-block; flex: none;
+}
+
+/* ---------- Fichas de función ---------- */
+.ficha {
+  background: var(--ficha-bg); border-left: 4px solid var(--azul);
+  border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: .8rem;
+}
+.ficha-nombre {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+  margin: 0 0 .5rem; font-size: 1.0rem;
+}
+.ficha-nombre .mono { color: var(--azul); font-weight: 700; }
+.ficha-guion { color: var(--gris-suave); }
+.ficha-quehace {
+  font-family: var(--f-cuerpo); font-weight: 400; font-size: 0.92rem;
+  color: var(--gris-tx);
+}
+.ficha-linea { margin: 0 0 .3rem !important; font-size: 0.92rem; }
+.ficha-rotulo { font-weight: 700; color: var(--gris-suave); }
+.ficha-ejemplos { list-style: none; margin: .2rem 0 .4rem; padding-left: .9rem; }
+.ficha-ejemplos li { margin-bottom: .25rem; }
+.ficha-ejemplos li::before { content: "– "; color: var(--gris-suave); }
+
+/* ---------- Procedimientos (ayuda al desempeño) ---------- */
+.proc {
+  border-radius: var(--radio); overflow: hidden; margin: 1.1rem 0 1.4rem;
+  border-left: 4px solid var(--azul); background: var(--ficha-bg);
+  scroll-margin-top: 4.5rem;
+}
+.proc-cab { background: var(--inst-superficie); padding: .8rem 1rem .85rem; }
+.proc-clave { margin: 0 0 .15rem; }
+.proc-clave .mono {
+  color: #F7D9BE; font-size: 0.85rem; font-weight: 700; letter-spacing: .04em;
+}
+.proc-titulo {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.18rem;
+  color: var(--azul-tx); line-height: 1.3;
+}
+.proc-paraque {
+  margin: .3rem 0 0 !important; font-size: 0.92rem; color: #FBE7D6;
+}
+.proc-cuerpo { padding: .8rem 1rem .9rem; }
+.proc-rotulo {
+  margin: .75rem 0 .25rem !important; font-family: var(--f-titulo);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gris-suave);
+}
+.proc-cuerpo .proc-rotulo:first-child, .proc-bloque .proc-rotulo { margin-top: 0 !important; }
+.proc-rotulo--ok { color: var(--exito-ac); }
+.proc-rotulo--falla { color: var(--alerta-ac); }
+.proc-texto { margin: 0 !important; font-size: 0.92rem; }
+.proc .ui, .proc-pasos .ui { font-weight: 700; color: var(--azul); }
+.proc-cab .ui { color: var(--azul-tx); }
+.proc-figura { margin: .7rem 0 .2rem; text-align: center; }
+.proc-figura img {
+  max-width: 100%; height: auto; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--papel);
+}
+.proc-figura figcaption {
+  margin-top: .3rem; font-size: 0.85rem; color: var(--gris-suave);
+  font-style: italic;
+}
+[data-tema="oscuro"] .proc .ui { color: #E9A467; }
+.proc-pasos {
+  margin: .2rem 0 0; padding-left: 0; list-style: none; counter-reset: paso;
+}
+.proc-pasos li {
+  counter-increment: paso; position: relative; padding-left: 2rem;
+  margin-bottom: .4rem; font-size: 0.92rem;
+}
+.proc-pasos li::before {
+  content: counter(paso); position: absolute; left: 0; top: .05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--inst-superficie); color: var(--azul-tx);
+  font-family: var(--f-mono); font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.proc-atajo { margin: .1rem 0 0 !important; }
+.proc-atajo kbd {
+  font-family: var(--f-mono); font-size: 0.95rem;
+  background: var(--papel); border: 1px solid var(--borde);
+  border-bottom-width: 2px; border-radius: 6px; padding: .12rem .5rem;
+  color: var(--gris-tx);
+}
+.proc-bloque { padding: .7rem 1rem; border-top: 1px solid var(--borde); }
+.proc-ok { background: var(--exito-bg); border-left: 5px solid var(--exito-ac); }
+.proc-falla {
+  background: var(--alerta-bg); border-left: 7px double var(--alerta-ac);
+}
+.proc-errores { margin: .25rem 0 0; padding-left: 1.1rem; }
+.proc-errores li { margin-bottom: .3rem; font-size: 0.92rem; }
+.proc-errores li::marker { color: var(--alerta-ac); }
+.proc-nota {
+  margin: 0 !important; padding: .55rem 1rem .7rem;
+  font-size: 0.85rem; color: var(--gris-suave);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 480px) {
+  .proc-cab, .proc-cuerpo, .proc-bloque, .proc-nota { padding-left: .8rem; padding-right: .8rem; }
+}
+
+/* ---------- Puntos clave y referencias ---------- */
+.puntos-clave {
+  background: var(--info-bg); border: 1px solid var(--rejilla-cab);
+  border-radius: var(--radio); padding: 1rem 1.2rem; margin-top: 1.8rem;
+  scroll-margin-top: 4.5rem;
+}
+.puntos-clave h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem;
+}
+.puntos-clave ul { margin: 0; padding-left: 1.2rem; }
+.puntos-clave li { margin-bottom: .4rem; }
+
+.referencias { margin-top: 1.8rem; scroll-margin-top: 4.5rem; }
+.referencias h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--rejilla-cab);
+}
+.referencias ul { list-style: none; margin: 0; padding: 0; }
+.referencias li {
+  font-size: 0.85rem; color: var(--gris-suave);
+  padding-left: 1.2rem; text-indent: -1.2rem; margin-bottom: .5rem;
+}
+
+/* ---------- Pie ---------- */
+.pie {
+  max-width: 1180px; margin: 0 auto; padding: 0 1rem 2rem;
+  font-size: 0.85rem; color: var(--gris-suave); text-align: center;
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  body { background: #fff; }
+  .barra, .indice, .saltar { display: none !important; }
+  .envoltura { display: block; max-width: none; padding: 0; }
+  .documento { border: 0; }
+  .ficha, .aviso, .puntos-clave, .rejilla-envoltura, .proc, tr { break-inside: avoid; }
+  h2.seccion { break-after: avoid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="saltar" href="#documento">Ir al contenido</a>
+<div class="barra" role="toolbar" aria-label="Opciones de lectura"><span class="barra-titulo">Tema 07 — Organización de datos y lógica</span><button type="button" id="texto-menos" aria-label="Reducir el tamaño del texto">A−</button><button type="button" id="texto-mas" aria-label="Aumentar el tamaño del texto">A+</button><button type="button" id="cambiar-tema" aria-pressed="false">Modo oscuro</button></div>
+<div class="envoltura">
+<nav class="indice" aria-label="Contenido de la guía"><h2>Contenido</h2><ol><li><a href="#s-1-ordenar-simple-y-multinivel">1. Ordenar: simple y multinivel</a></li><li><a href="#s-2-filtros-y-operadores-logicos">2. Filtros y operadores lógicos</a></li><li><a href="#s-3-quitar-duplicados">3. Quitar duplicados</a></li><li><a href="#s-4-la-ia-como-traductora-de-preguntas">4. La IA como traductora de preguntas</a></li><li><a href="#s-5-fichas-de-orden-filtro-y-depuracion">5. Fichas de orden, filtro y depuración</a></li><li><a href="#s-6-ejemplo-resuelto-base-de-personal">6. Ejemplo resuelto: Base de Personal</a></li><li><a href="#s-puntos-clave">Puntos clave</a></li><li><a href="#s-referencias">Referencias</a></li></ol></nav>
+<main class="documento" id="documento" tabindex="-1">
+<header class="portada">
+<p class="portada-etiqueta">EXCEL BÁSICO CON IA · PRÁCTICA GUIADA</p>
+<h1 class="portada-titulo">Tema 07 — Organización de datos y lógica</h1>
+<p class="portada-subtitulo">Ordenar, filtrar y quitar duplicados para responder preguntas de negocio con los datos, con apoyo de IA para convertir la pregunta en criterios exactos.</p>
+</header>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">En breve.</span> En esta guía aprenderás a organizar una base de personal con tres herramientas: ordenar, filtrar y quitar duplicados. Ordenar reacomoda las filas, filtrar muestra solo las que cumplen una condición y quitar duplicados elimina registros repetidos. También usarás la IA para convertir una pregunta de negocio en el criterio exacto y verificarás el resultado en tu archivo.</p></aside>
+<h2 class="seccion" id="s-1-ordenar-simple-y-multinivel" tabindex="-1">1. Ordenar: simple y multinivel</h2>
+<p><strong>Ordenar</strong> es reacomodar las filas según los valores de una columna, como acomodar expedientes por apellido. El orden simple usa una sola columna, por ejemplo el apellido paterno (<strong>C</strong>). El orden multinivel usa dos o más columnas: primero una principal y luego otra dentro de cada grupo, por ejemplo el departamento (<strong>D</strong>) y después el salario mensual (<strong>G</strong>). En Excel se abre con <strong>Datos &gt; Ordenar</strong> y se agregan niveles.</p>
+<h2 class="seccion" id="s-2-filtros-y-operadores-logicos" tabindex="-1">2. Filtros y operadores lógicos</h2>
+<p><strong>Filtrar</strong> es mostrar solo las filas que cumplen una condición y ocultar el resto: es como hacerle una pregunta a la lista. El <strong>Autofiltro</strong> agrega una flecha a cada encabezado y con ella eliges el criterio. Los <strong>operadores lógicos</strong> comparan valores: mayor que (&gt;), menor que (&lt;), igual a (=) y contiene. Por ejemplo, el filtro salario mensual mayor a $15,000.00 deja cuatro filas visibles: López, Méndez, Vega y el duplicado de Méndez.</p>
+<h2 class="seccion" id="s-3-quitar-duplicados" tabindex="-1">3. Quitar duplicados</h2>
+<p>Una <strong>fila duplicada</strong> es un registro repetido: aparece cuando alguien captura dos veces el mismo dato o cuando se juntan listas. Quitar duplicados compara las columnas que elijas y elimina las filas repetidas. Si seleccionas todas las columnas, se conserva una sola copia de cada empleado. El riesgo es silencioso: un duplicado altera los conteos sin que se note, por eso conviene quitarlos antes de contar o sumar.</p>
+<h2 class="seccion" id="s-4-la-ia-como-traductora-de-preguntas" tabindex="-1">4. La IA como traductora de preguntas</h2>
+<p>La <strong>IA generativa</strong> redacta una respuesta nueva a partir de lo que le pides. En este tema la usas para traducir una pregunta de negocio, como “¿quiénes ganan más de $15,000?”, en los criterios exactos de orden o filtro. Pídele la respuesta con la estructura T-A-R-F (Tarea, Audiencia, Rol, Formato) y verifica siempre que el criterio propuesto muestre lo que realmente preguntaste.</p>
+<h2 class="seccion" id="s-5-fichas-de-orden-filtro-y-depuracion" tabindex="-1">5. Fichas de orden, filtro y depuración</h2>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Ordenar simple</code><span class="ficha-guion">—</span><span class="ficha-quehace">Reacomoda la lista según los valores de una sola columna.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Datos &gt; Ordenar (A a Z o Z a A)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Ordenar Apellido paterno de A a Z deja a López primero y a Vega al final.</code></li><li><code class="mono">Ordenar Salario mensual de mayor a menor deja la fila de Vega arriba.</code></li><li><code class="mono">Ordenar ID empleado de A a Z deja EMP001 primero.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para poner una lista en un orden que permita buscar o comparar.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Ordenar multinivel</code><span class="ficha-guion">—</span><span class="ficha-quehace">Ordena por una primera columna y, dentro de cada grupo, por otra.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Datos &gt; Ordenar &gt; Agregar nivel</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Departamento A-Z y Salario mensual de mayor a menor: cada área queda en un solo bloque.</code></li><li><code class="mono">Departamento A-Z y Apellido paterno A-Z dentro de cada área.</code></li><li><code class="mono">Agregar un tercer nivel con ID empleado para un orden único y repetible.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Cuando una sola columna no basta para dejar cada grupo en orden.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Autofiltro</code><span class="ficha-guion">—</span><span class="ficha-quehace">Muestra solo las filas que cumplen el criterio que eliges.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Datos &gt; Filtro (o Inicio &gt; Ordenar y filtrar &gt; Filtro)</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Activar Autofiltro agrega una flecha a cada encabezado.</code></li><li><code class="mono">Filtrar Departamento = Operaciones muestra solo a Méndez y su duplicado.</code></li><li><code class="mono">Quitar el filtro restaura las cinco filas de la muestra.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para concentrarse en un grupo sin borrar el resto de la lista.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Operadores lógicos (&gt;, &lt;, =, contiene)</code><span class="ficha-guion">—</span><span class="ficha-quehace">Comparan un valor con el criterio y deciden qué filas cumplen la condición.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">&gt; mayor que · &lt; menor que · = igual a · contiene texto</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Salario mensual &gt; 15000 → deja solo los mayores al criterio.</code></li><li><code class="mono">Departamento = Operaciones → deja solo ese departamento.</code></li><li><code class="mono">Apellido contiene &quot;Mén&quot; → encuentra a Méndez en sus dos filas.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para convertir una pregunta de negocio en el criterio exacto del filtro.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Quitar duplicados</code><span class="ficha-guion">—</span><span class="ficha-quehace">Elimina filas repetidas considerando las columnas que selecciones.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Datos &gt; Quitar duplicados</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Con todas las columnas seleccionadas se elimina la fila repetida de EMP003.</code></li><li><code class="mono">El conteo =CONTAR.SI(G2:G6,&quot;&gt;15000&quot;) cambia de 4 a 3 al quitar el duplicado.</code></li><li><code class="mono">En el archivo completo, quitar duplicados en Personal_Practica deja las 50 filas limpias.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para depurar una base antes de contar, sumar o enviar un reporte.</p>
+</article>
+<h2 class="seccion" id="s-6-ejemplo-resuelto-base-de-personal" tabindex="-1">6. Ejemplo resuelto: Base de Personal</h2>
+<p>La minihoja es un recorte de <strong>Personal_Practica</strong>, la copia con duplicados del archivo de práctica; <strong>Base_Personal</strong> es la versión limpia. La hoja completa tiene siete columnas, así que aquí se muestra en dos recortes para que se lea con holgura: primero A–D y después E–G. Los cinco renglones de datos ocupan las filas 2 a 6, y el duplicado está en la fila 6.</p>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th><th scope="col" class="cab-col">C</th><th scope="col" class="cab-col">D</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>ID empleado</strong></td><td class="celda cab-dato"><strong>Nombre</strong></td><td class="celda cab-dato"><strong>Apellido paterno</strong></td><td class="celda cab-dato"><strong>Departamento</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>EMP001</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Juan</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Pérez</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Administración</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>EMP002</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Ana</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>López</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Ventas</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>EMP003</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Carlos</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Méndez</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Operaciones</td></tr><tr><th scope="row" class="cab-fila">5</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>EMP004</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Diana</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Vega</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Dirección</td></tr><tr><th scope="row" class="cab-fila">6</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>EMP003</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Carlos</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Méndez</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Operaciones</td></tr></tbody></table></div>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">E</th><th scope="col" class="cab-col">F</th><th scope="col" class="cab-col">G</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Puesto</strong></td><td class="celda cab-dato"><strong>Fecha de ingreso</strong></td><td class="celda cab-dato"><strong>Salario mensual</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Auxiliar</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>15/03/2021</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$13,500.00</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Asesor</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>20/06/2020</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$18,800.00</td></tr><tr><th scope="row" class="cab-fila">4</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Supervisor</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>10/01/2018</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$21,500.00</td></tr><tr><th scope="row" class="cab-fila">5</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Coordinadora</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>05/09/2016</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$32,000.00</td></tr><tr><th scope="row" class="cab-fila">6</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Supervisor</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>10/01/2018</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$21,500.00</td></tr></tbody></table></div>
+<p>Sobre esta muestra practica las tres operaciones del tema:</p>
+<ul class="lista"><li>Ordenar por Apellido paterno de A a Z: López, Méndez, Méndez, Pérez y Vega.</li><li>Orden multinivel: Departamento ascendente y, dentro de cada uno, Salario mensual descendente.</li><li>Filtrar Salario mensual &gt; $15,000.00: quedan cuatro filas visibles: López, Méndez, Vega y el duplicado de Méndez.</li><li>Quitar duplicados con todas las columnas: se elimina la fila repetida de EMP003 y quedan cuatro empleados.</li></ul>
+<p class="linea-formula"><span class="formula-celda">G7</span><code class="mono formula-texto">=CONTAR.SI(G2:G6,&quot;&gt;15000&quot;)</code><span class="formula-explica">→ 4 antes de quitar duplicados; 3 después</span></p>
+<aside class="aviso aviso--exito" role="note"><p><span class="aviso-etiqueta">Comprobación.</span> Comprueba en tu archivo: =CONTAR.SI(G2:G6,&quot;&gt;15000&quot;) devuelve 4 antes de quitar duplicados y 3 después, cuando quedan cuatro empleados. Esa diferencia es el punto del tema: un duplicado altera la cuenta sin que se note. Personal_Practica tiene 56 filas (50 más 6 duplicados) y Base_Personal tiene 50; sobre la versión limpia la comprobación se escribe =CONTAR.SI(G2:G51,&quot;&gt;15000&quot;).</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Con ayuda de la IA (T-A-R-F).</span> Prompt de ejemplo: &quot;Tarea: indica cómo filtrar en Excel para ver a quienes ganan más de $15,000.00 en el departamento de Operaciones. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que explica con pasos sencillos. Formato: lista de pasos con la ruta de los menús y el criterio exacto, usando solo datos ficticios. Antes de usar la respuesta, verifica que el filtro muestre exactamente las filas de Operaciones con salario mayor a $15,000.00.&quot;</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Consejo.</span> Para ordenar por varias columnas a la vez, usa el orden multinivel (Agregar nivel en Datos &gt; Ordenar) en lugar de ordenar una y otra vez.</p></aside>
+<aside class="aviso aviso--alerta" role="note"><p><span class="aviso-etiqueta">Advertencia.</span> Nunca pegues una base real de personal en una herramienta de IA: sustituye nombres, salarios y correos por datos ficticios. Verifica siempre que el criterio de orden o filtro que propone la IA muestre exactamente lo que preguntaste, antes de aplicarlo a tu archivo.</p></aside>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Operador</th><th scope="col" class="col-izq">Significado</th><th scope="col" class="col-izq">Ejemplo de filtro</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Operador">&gt;</td><td class="col-izq" data-rotulo="Significado">Mayor que</td><td class="col-izq" data-rotulo="Ejemplo de filtro">Salario mensual &gt; 15000</td></tr><tr><td class="col-izq" data-rotulo="Operador">&lt;</td><td class="col-izq" data-rotulo="Significado">Menor que</td><td class="col-izq" data-rotulo="Ejemplo de filtro">Salario mensual &lt; 15000</td></tr><tr><td class="col-izq" data-rotulo="Operador">=</td><td class="col-izq" data-rotulo="Significado">Igual a</td><td class="col-izq" data-rotulo="Ejemplo de filtro">Departamento = Operaciones</td></tr><tr><td class="col-izq" data-rotulo="Operador">contiene</td><td class="col-izq" data-rotulo="Significado">Busca texto dentro de la celda</td><td class="col-izq" data-rotulo="Ejemplo de filtro">Apellido contiene &quot;Mén&quot;</td></tr></tbody></table></div>
+<section class="puntos-clave" id="s-puntos-clave" tabindex="-1"><h2>Puntos clave</h2><ul><li>Ordenar reacomoda la lista; no borra datos.</li><li>Filtrar oculta lo que no cumple el criterio; el resto sigue en la hoja.</li><li>Los operadores lógicos son la pregunta que le haces a los datos.</li><li>Un duplicado altera las cuentas sin que se note: revísalas antes y después de quitarlos.</li><li>La IA convierte una pregunta de negocio en criterios exactos; verifica que muestre lo que pediste.</li></ul></section>
+<section class="referencias" id="s-referencias" tabindex="-1"><h2>Referencias</h2><ul><li>Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li>Microsoft. (2025). Ordenar datos en un rango o tabla. Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/ordenar-datos-en-un-rango-o-tabla-62d0b95d-2a90-4610-a6ae-2e545c4a4654</li><li>OpenAI. (2025). ChatGPT [Modelo de lenguaje grande]. https://chat.openai.com</li></ul></section>
+</main>
+</div>
+<footer class="pie">Excel Básico con Inteligencia Artificial · Datos ficticios para práctica.</footer>
+<script>
+(function () {
+  var raiz = document.documentElement;
+  var escala = 1;
+
+  function aplicarEscala() {
+    raiz.style.setProperty('--escala', escala);
+  }
+  var bMas = document.getElementById('texto-mas');
+  var bMenos = document.getElementById('texto-menos');
+  var bTema = document.getElementById('cambiar-tema');
+
+  if (bMas) bMas.addEventListener('click', function () {
+    escala = Math.min(1.5, escala + 0.1); aplicarEscala();
+  });
+  if (bMenos) bMenos.addEventListener('click', function () {
+    escala = Math.max(0.85, escala - 0.1); aplicarEscala();
+  });
+  if (bTema) bTema.addEventListener('click', function () {
+    var oscuro = raiz.getAttribute('data-tema') === 'oscuro';
+    raiz.setAttribute('data-tema', oscuro ? 'claro' : 'oscuro');
+    bTema.setAttribute('aria-pressed', String(!oscuro));
+    bTema.textContent = oscuro ? 'Modo oscuro' : 'Modo claro';
+  });
+
+  // Resalta en el índice la sección visible.
+  var enlaces = Array.prototype.slice.call(
+    document.querySelectorAll('.indice a')
+  );
+  var destinos = enlaces
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if ('IntersectionObserver' in window && destinos.length) {
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        enlaces.forEach(function (a) {
+          a.classList.toggle(
+            'activo', a.getAttribute('href') === '#' + e.target.id
+          );
+        });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    destinos.forEach(function (d) { obs.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>
