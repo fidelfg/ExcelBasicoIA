@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tema 02 — Formato de celdas y el arte de preguntar (Prompting)</title>
+<meta name="description" content="Guía web del Tema 2 del curso Excel Básico con Inteligencia Artificial: formato de texto y números, valor real frente a formato visual y la estructura de prompt T-A-R-F.">
+<style>
+:root {
+  --azul: #854209;
+  --azul-tx: #FFFFFF;
+  --inst-superficie: #854209;
+  --gris-tx: #3A3A3A;
+  --gris-suave: #616B67;
+  --info-bg: #F8DBBE;   --info-ac: #854209;
+  --exito-bg: #D9EADF; --exito-ac: #2E5940;
+  --alerta-bg: #F6E0DC; --alerta-ac: #B23A2E;
+  --captura-bg: #F5E9DC;
+  --formula-bg: #E4E1DC;
+  --formula-bg2: #C2BFBB;
+  --cab-tabla-bg: #854209; --cab-tabla-tx: #FFFFFF;
+  --rejilla-cab: #D4CEC4;
+  --borde: #C6C0B7;
+  --ficha-bg: #FAF7F2;
+  --papel: #FFFFFF;
+  --fondo: #ECEEED;
+  --f-titulo: "Segoe UI Semibold", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-cuerpo: Calibri, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --f-mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "Liberation Mono", monospace;
+  --radio: 10px;
+  --escala: 1;
+}
+
+/* Modo oscuro: cambia el papel, NUNCA el código de color de la hoja de cálculo
+   (beige = quien practica escribe; gris = lo completa Excel), para no
+   romper el significado. */
+[data-tema="oscuro"] {
+  --papel: #1E1B18;
+  --fondo: #141210;
+  --gris-tx: #EAE6E0;
+  --gris-suave: #A7B0AB;
+  --azul: #E9A467;
+  --info-bg: #2E2318;
+  --exito-bg: #1B2A22;
+  --alerta-bg: #33201F;
+  --ficha-bg: #26221D;
+  --borde: #443E36;
+  --cab-tabla-bg: #6B3508;
+  --rejilla-cab: #433D34;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: calc(100% * var(--escala)); scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--gris-tx);
+  font-family: var(--f-cuerpo);
+  font-size: 1.0rem;
+  line-height: 1.6;
+}
+
+.mono {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+  background: rgba(133,66,9,.07);
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  padding: .05em .35em;
+  /* NO "white-space: nowrap": una sintaxis de menú ("Inicio > Portapapeles >
+     Copiar formato") o un ejemplo largo de ficha_funcion se salen del
+     contenedor sin aviso -- no hacen scroll, se cortan visualmente contra el
+     borde de la tarjeta. Los tokens cortos (un nombre de función, "B2", una
+     clave de procedimiento) no tienen espacios, así que envolver no les
+     cambia el aspecto; solo protege a los que sí son largos. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+[data-tema="oscuro"] .mono { background: rgba(255,255,255,.08); }
+
+.sr-only {
+  position: absolute; left: -9999px; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+  border: 0;
+}
+
+.saltar {
+  position: absolute; left: -999px; top: 0; z-index: 100;
+  background: var(--inst-superficie); color: #fff; padding: .6rem 1rem;
+}
+.saltar:focus { left: .5rem; top: .5rem; }
+
+:focus-visible { outline: 3px solid var(--exito-ac); outline-offset: 2px; }
+
+/* ---------- Barra de lectura ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+  padding: .55rem 1rem;
+  background: var(--papel);
+  border-bottom: 1px solid var(--borde);
+}
+.barra-titulo {
+  font-family: var(--f-titulo); font-weight: 700; color: var(--azul);
+  margin-right: auto; font-size: 0.92rem;
+}
+@media (max-width: 520px) {
+  .barra-titulo { flex: 1 1 100%; }
+}
+.barra button {
+  font-family: var(--f-cuerpo); font-size: 0.85rem;
+  color: var(--gris-tx); background: transparent;
+  border: 1px solid var(--borde); border-radius: 999px;
+  padding: .35rem .8rem; cursor: pointer; min-height: 2.2rem;
+}
+.barra button:hover { background: var(--info-bg); }
+
+/* El salto por ancla no queda pegado a la barra de lectura fija. */
+h2.seccion, section.puntos-clave, section.referencias, section.proc {
+  scroll-margin-top: 4.2rem;
+}
+
+/* ---------- Estructura ---------- */
+.envoltura {
+  max-width: 1180px; margin: 0 auto; padding: 1.2rem 1rem 3rem;
+  display: grid; gap: 1.6rem; grid-template-columns: 1fr;
+}
+@media (min-width: 1000px) {
+  .envoltura { grid-template-columns: 250px minmax(0, 1fr); }
+}
+
+/* ---------- Índice ---------- */
+.indice {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: .9rem 1rem;
+}
+@media (min-width: 1000px) {
+  .indice { position: sticky; top: 4.2rem; align-self: start; max-height: calc(100vh - 5.5rem); overflow-y: auto; }
+}
+.indice h2 {
+  font-family: var(--f-titulo); font-size: 0.85rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--gris-suave); margin: 0 0 .6rem;
+}
+.indice ol { list-style: none; margin: 0; padding: 0; }
+.indice li { margin: 0 0 .3rem; }
+.indice a {
+  display: block; color: var(--gris-tx); text-decoration: none;
+  font-size: 0.92rem; padding: .3rem .5rem; border-radius: 6px;
+  border-left: 3px solid transparent;
+}
+.indice a:hover, .indice a.activo {
+  background: var(--info-bg); border-left-color: var(--azul); color: var(--azul);
+}
+
+/* ---------- Documento ---------- */
+.documento {
+  background: var(--papel); border: 1px solid var(--borde);
+  border-radius: var(--radio); padding: 0 0 1.8rem;
+  min-width: 0;
+}
+.documento > *:not(.portada) { margin-left: 1.4rem; margin-right: 1.4rem; }
+@media (max-width: 520px) {
+  .documento > *:not(.portada) { margin-left: 1rem; margin-right: 1rem; }
+}
+.documento p { margin: 0 0 .75rem; }
+p, li, td, th { overflow-wrap: break-word; word-break: break-word; }
+
+/* ---------- Portada ---------- */
+.portada {
+  background: var(--inst-superficie); color: var(--azul-tx);
+  padding: 1.8rem 1.4rem; border-radius: var(--radio) var(--radio) 0 0;
+  margin-bottom: 1.3rem; border-bottom: 5px solid #D66A0F;
+}
+.portada-etiqueta {
+  font-family: var(--f-titulo); font-size: 0.85rem; font-weight: 700;
+  letter-spacing: .1em; color: #F7D9BE; margin: 0 0 .35rem;
+}
+.portada-titulo {
+  font-family: var(--f-titulo); font-size: 1.9rem; line-height: 1.25;
+  margin: 0; color: #fff; font-weight: 700;
+}
+.portada-subtitulo {
+  font-size: 1.0rem; color: #FBE7D6; font-style: italic;
+  margin: .5rem 0 0;
+}
+[data-tema="oscuro"] .portada { background: #5A2D07; }
+
+/* ---------- Secciones ---------- */
+h2.seccion {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 1.7rem 1.4rem .7rem; padding-bottom: .35rem;
+  border-bottom: 2px solid var(--rejilla-cab);
+  scroll-margin-top: 4.5rem;
+}
+
+/* ---------- Cajas de aviso ---------- */
+.aviso {
+  border-left: 5px solid var(--info-ac); border-radius: 0 var(--radio) var(--radio) 0;
+  background: var(--info-bg); padding: .85rem 1rem; margin: 0 1.4rem 1rem;
+}
+.aviso p { margin: 0; font-size: 0.92rem; }
+.aviso-etiqueta { font-family: var(--f-titulo); font-weight: 700; color: var(--info-ac); }
+.aviso--exito {
+  background: var(--exito-bg); border-left-color: var(--exito-ac);
+}
+.aviso--exito .aviso-etiqueta { color: var(--exito-ac); }
+.aviso--alerta {
+  background: var(--alerta-bg); border-left-color: var(--alerta-ac);
+  border-left-style: double; border-left-width: 7px;
+}
+.aviso--alerta .aviso-etiqueta { color: var(--alerta-ac); }
+[data-tema="oscuro"] .aviso--exito .aviso-etiqueta { color: #8FBFA0; }
+[data-tema="oscuro"] .aviso--alerta .aviso-etiqueta { color: #E8998C; }
+[data-tema="oscuro"] .aviso-etiqueta { color: #E9A467; }
+
+/* ---------- Listas ---------- */
+.lista { margin: 0 0 1rem; padding-left: 1.2rem; }
+.lista li { margin-bottom: .35rem; }
+
+/* ---------- Línea de fórmula ---------- */
+.linea-formula {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  /* Solo top y bottom, con !important para ganarle a ".documento p" (que es
+     más específico). El margin-left/right NO se toca aquí: debe heredar el
+     de ".documento > *:not(.portada)", o el bloque queda pegado al borde
+     mientras el resto del texto respeta la sangría. Ya pasó una vez: usar el
+     shorthand "margin: 0 0 .45rem !important" ponía left y right en 0 sin
+     querer, y el !important le ganaba a la regla de sangría aunque esta
+     viniera después en la hoja de estilos. */
+  margin-top: 0 !important;
+  margin-bottom: .45rem !important;
+}
+.formula-celda {
+  font-family: var(--f-mono); font-weight: 700; color: var(--azul);
+  min-width: 2.6rem;
+}
+.formula-texto { white-space: normal; word-break: break-word; }
+.formula-explica { color: var(--gris-suave); font-size: 0.92rem; }
+
+/* ---------- Tabla de conceptos ---------- */
+.tabla-envoltura { margin-bottom: 1.1rem; }
+.tabla-conceptos {
+  width: 100%; border-collapse: collapse; font-size: 0.95rem;
+}
+.tabla-conceptos th {
+  background: var(--cab-tabla-bg); color: var(--cab-tabla-tx);
+  font-family: var(--f-titulo); font-weight: 700;
+  padding: .55rem .7rem; border: 1px solid var(--borde);
+}
+.tabla-conceptos td {
+  padding: .5rem .7rem; border: 1px solid var(--borde); vertical-align: top;
+}
+.tabla-conceptos .col-izq { text-align: left; }
+.tabla-conceptos .col-der { text-align: right; }
+.tabla-conceptos .fila-total td { font-weight: 700; }
+
+/* En móvil la tabla se apila y cada celda muestra su encabezado. */
+@media (max-width: 640px) {
+  .tabla-conceptos thead { display: none; }
+  .tabla-conceptos, .tabla-conceptos tbody, .tabla-conceptos tr, .tabla-conceptos td {
+    display: block; width: 100%;
+  }
+  .tabla-conceptos tr {
+    border: 1px solid var(--borde); border-radius: 8px;
+    margin-bottom: .7rem; overflow: visible;
+  }
+  .tabla-conceptos td { border: 0; border-bottom: 1px solid var(--borde); text-align: left !important; }
+  .tabla-conceptos tr td:last-child { border-bottom: 0; }
+  .tabla-conceptos td::before {
+    content: attr(data-rotulo);
+    display: block; font-family: var(--f-titulo); font-weight: 700;
+    font-size: 0.85rem; color: var(--gris-suave); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: .15rem;
+  }
+}
+
+/* ---------- Rejilla de Excel ---------- */
+.rejilla-envoltura {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--borde); border-radius: 8px; margin-bottom: .8rem;
+}
+.rejilla { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+.rejilla th {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+  padding: .4rem .6rem; border: 1px solid var(--borde);
+}
+.rejilla .cab-fila { width: 2.2rem; }
+.rejilla .esquina { width: 2.2rem; }
+.rejilla td {
+  padding: .45rem .7rem; border: 1px solid var(--borde);
+  background: var(--papel); white-space: nowrap;
+}
+.rejilla td.cab-dato {
+  background: var(--rejilla-cab); color: var(--azul);
+  font-family: var(--f-titulo); font-weight: 700; text-align: center;
+}
+.rejilla .col-izq { text-align: left; }
+.rejilla .col-der { text-align: right; }
+.rejilla .captura { background: var(--captura-bg); color: #3A3A3A; }
+.rejilla .formula { background: var(--formula-bg); color: #3A3A3A; font-family: var(--f-mono); }
+
+/* ---------- Leyenda de colores ---------- */
+.leyenda {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .5rem 1.2rem;
+  padding: 0; margin: 0 0 1.1rem; font-size: 0.92rem; color: var(--gris-suave);
+}
+.leyenda li { display: flex; align-items: center; gap: .45rem; }
+.muestra {
+  width: 1.05rem; height: 1.05rem; border-radius: 4px;
+  border: 1px solid var(--borde); display: inline-block; flex: none;
+}
+
+/* ---------- Fichas de función ---------- */
+.ficha {
+  background: var(--ficha-bg); border-left: 4px solid var(--azul);
+  border-radius: 0 8px 8px 0; padding: .85rem 1rem; margin-bottom: .8rem;
+}
+.ficha-nombre {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .45rem;
+  margin: 0 0 .5rem; font-size: 1.0rem;
+}
+.ficha-nombre .mono { color: var(--azul); font-weight: 700; }
+.ficha-guion { color: var(--gris-suave); }
+.ficha-quehace {
+  font-family: var(--f-cuerpo); font-weight: 400; font-size: 0.92rem;
+  color: var(--gris-tx);
+}
+.ficha-linea { margin: 0 0 .3rem !important; font-size: 0.92rem; }
+.ficha-rotulo { font-weight: 700; color: var(--gris-suave); }
+.ficha-ejemplos { list-style: none; margin: .2rem 0 .4rem; padding-left: .9rem; }
+.ficha-ejemplos li { margin-bottom: .25rem; }
+.ficha-ejemplos li::before { content: "– "; color: var(--gris-suave); }
+
+/* ---------- Procedimientos (ayuda al desempeño) ---------- */
+.proc {
+  border-radius: var(--radio); overflow: hidden; margin: 1.1rem 0 1.4rem;
+  border-left: 4px solid var(--azul); background: var(--ficha-bg);
+  scroll-margin-top: 4.5rem;
+}
+.proc-cab { background: var(--inst-superficie); padding: .8rem 1rem .85rem; }
+.proc-clave { margin: 0 0 .15rem; }
+.proc-clave .mono {
+  color: #F7D9BE; font-size: 0.85rem; font-weight: 700; letter-spacing: .04em;
+}
+.proc-titulo {
+  margin: 0; font-family: var(--f-titulo); font-size: 1.18rem;
+  color: var(--azul-tx); line-height: 1.3;
+}
+.proc-paraque {
+  margin: .3rem 0 0 !important; font-size: 0.92rem; color: #FBE7D6;
+}
+.proc-cuerpo { padding: .8rem 1rem .9rem; }
+.proc-rotulo {
+  margin: .75rem 0 .25rem !important; font-family: var(--f-titulo);
+  font-size: 0.85rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--gris-suave);
+}
+.proc-cuerpo .proc-rotulo:first-child, .proc-bloque .proc-rotulo { margin-top: 0 !important; }
+.proc-rotulo--ok { color: var(--exito-ac); }
+.proc-rotulo--falla { color: var(--alerta-ac); }
+.proc-texto { margin: 0 !important; font-size: 0.92rem; }
+.proc .ui, .proc-pasos .ui { font-weight: 700; color: var(--azul); }
+.proc-cab .ui { color: var(--azul-tx); }
+.proc-figura { margin: .7rem 0 .2rem; text-align: center; }
+.proc-figura img {
+  max-width: 100%; height: auto; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--papel);
+}
+.proc-figura figcaption {
+  margin-top: .3rem; font-size: 0.85rem; color: var(--gris-suave);
+  font-style: italic;
+}
+[data-tema="oscuro"] .proc .ui { color: #E9A467; }
+.proc-pasos {
+  margin: .2rem 0 0; padding-left: 0; list-style: none; counter-reset: paso;
+}
+.proc-pasos li {
+  counter-increment: paso; position: relative; padding-left: 2rem;
+  margin-bottom: .4rem; font-size: 0.92rem;
+}
+.proc-pasos li::before {
+  content: counter(paso); position: absolute; left: 0; top: .05rem;
+  width: 1.45rem; height: 1.45rem; border-radius: 50%;
+  background: var(--inst-superficie); color: var(--azul-tx);
+  font-family: var(--f-mono); font-size: 0.85rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.proc-atajo { margin: .1rem 0 0 !important; }
+.proc-atajo kbd {
+  font-family: var(--f-mono); font-size: 0.95rem;
+  background: var(--papel); border: 1px solid var(--borde);
+  border-bottom-width: 2px; border-radius: 6px; padding: .12rem .5rem;
+  color: var(--gris-tx);
+}
+.proc-bloque { padding: .7rem 1rem; border-top: 1px solid var(--borde); }
+.proc-ok { background: var(--exito-bg); border-left: 5px solid var(--exito-ac); }
+.proc-falla {
+  background: var(--alerta-bg); border-left: 7px double var(--alerta-ac);
+}
+.proc-errores { margin: .25rem 0 0; padding-left: 1.1rem; }
+.proc-errores li { margin-bottom: .3rem; font-size: 0.92rem; }
+.proc-errores li::marker { color: var(--alerta-ac); }
+.proc-nota {
+  margin: 0 !important; padding: .55rem 1rem .7rem;
+  font-size: 0.85rem; color: var(--gris-suave);
+  border-top: 1px solid var(--borde);
+}
+
+@media (max-width: 480px) {
+  .proc-cab, .proc-cuerpo, .proc-bloque, .proc-nota { padding-left: .8rem; padding-right: .8rem; }
+}
+
+/* ---------- Puntos clave y referencias ---------- */
+.puntos-clave {
+  background: var(--info-bg); border: 1px solid var(--rejilla-cab);
+  border-radius: var(--radio); padding: 1rem 1.2rem; margin-top: 1.8rem;
+  scroll-margin-top: 4.5rem;
+}
+.puntos-clave h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem;
+}
+.puntos-clave ul { margin: 0; padding-left: 1.2rem; }
+.puntos-clave li { margin-bottom: .4rem; }
+
+.referencias { margin-top: 1.8rem; scroll-margin-top: 4.5rem; }
+.referencias h2 {
+  font-family: var(--f-titulo); font-size: 1.18rem; color: var(--azul);
+  margin: 0 0 .6rem; padding-bottom: .3rem; border-bottom: 2px solid var(--rejilla-cab);
+}
+.referencias ul { list-style: none; margin: 0; padding: 0; }
+.referencias li {
+  font-size: 0.85rem; color: var(--gris-suave);
+  padding-left: 1.2rem; text-indent: -1.2rem; margin-bottom: .5rem;
+}
+
+/* ---------- Pie ---------- */
+.pie {
+  max-width: 1180px; margin: 0 auto; padding: 0 1rem 2rem;
+  font-size: 0.85rem; color: var(--gris-suave); text-align: center;
+}
+
+/* ---------- Impresión ---------- */
+@media print {
+  body { background: #fff; }
+  .barra, .indice, .saltar { display: none !important; }
+  .envoltura { display: block; max-width: none; padding: 0; }
+  .documento { border: 0; }
+  .ficha, .aviso, .puntos-clave, .rejilla-envoltura, .proc, tr { break-inside: avoid; }
+  h2.seccion { break-after: avoid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+<a class="saltar" href="#documento">Ir al contenido</a>
+<div class="barra" role="toolbar" aria-label="Opciones de lectura"><span class="barra-titulo">Tema 02 — Formato de celdas y el arte de preguntar (Prompting)</span><button type="button" id="texto-menos" aria-label="Reducir el tamaño del texto">A−</button><button type="button" id="texto-mas" aria-label="Aumentar el tamaño del texto">A+</button><button type="button" id="cambiar-tema" aria-pressed="false">Modo oscuro</button></div>
+<div class="envoltura">
+<nav class="indice" aria-label="Contenido de la guía"><h2>Contenido</h2><ol><li><a href="#s-1-formato-de-texto-y-alineacion">1. Formato de texto y alineación</a></li><li><a href="#s-2-formato-de-numeros-moneda-millares-decimales-porcentaje-y-fecha">2. Formato de números: moneda, millares, decimales, porcentaje y fecha</a></li><li><a href="#s-3-la-idea-central-valor-real-vs-formato-visual">3. La idea central: valor real vs. formato visual</a></li><li><a href="#s-4-la-formula-t-a-r-f-para-instruir-a-la-ia">4. La fórmula T-A-R-F para instruir a la IA</a></li><li><a href="#s-5-prompt-deficiente-vs-prompt-t-a-r-f">5. Prompt deficiente vs. prompt T-A-R-F</a></li><li><a href="#s-6-fichas-de-formatos-y-de-la-formula-t-a-r-f">6. Fichas de formatos y de la fórmula T-A-R-F</a></li><li><a href="#s-7-ejemplo-resuelto-dar-formato-al-inventario">7. Ejemplo resuelto: dar formato al inventario</a></li><li><a href="#s-puntos-clave">Puntos clave</a></li><li><a href="#s-referencias">Referencias</a></li></ol></nav>
+<main class="documento" id="documento" tabindex="-1">
+<header class="portada">
+<p class="portada-etiqueta">EXCEL BÁSICO CON IA · PRÁCTICA GUIADA</p>
+<h1 class="portada-titulo">Tema 02 — Formato de celdas y el arte de preguntar (Prompting)</h1>
+<p class="portada-subtitulo">Dar formato profesional a celdas (moneda, porcentaje, fecha, alineación), distinguir el valor real del formato visual y construir prompts con la estructura T-A-R-F.</p>
+</header>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">En breve.</span> En esta guía aplicarás formato de texto, alineación y formato de números: moneda, millares, decimales, porcentaje y fecha. Entenderás que Excel guarda un valor real y solo cambia cómo se ve, y aprenderás la fórmula T-A-R-F (Tarea, Audiencia, Rol, Formato) para pedirle a la IA respuestas útiles. Al terminar, transformarás el inventario del Tema 1 en un reporte legible y compararás un prompt vago con uno completo.</p></aside>
+<h2 class="seccion" id="s-1-formato-de-texto-y-alineacion" tabindex="-1">1. Formato de texto y alineación</h2>
+<p>En la pestaña <strong>Inicio</strong>, los grupos <strong>Fuente</strong> y <strong>Alineación</strong> cambian la apariencia de una celda sin tocar su contenido: negrita, tamaño, color, centrar, alinear a la izquierda o a la derecha y ajustar texto. Ajustar texto hace que un texto largo se reparta en varias líneas dentro de la misma celda, en lugar de desbordarse hacia la celda vecina.</p>
+<h2 class="seccion" id="s-2-formato-de-numeros-moneda-millares-decimales-porcentaje-y-fecha" tabindex="-1">2. Formato de números: moneda, millares, decimales, porcentaje y fecha</h2>
+<p>El grupo <strong>Número</strong> de la pestaña Inicio cambia cómo se ven las cantidades: <strong>Moneda</strong> muestra pesos con dos decimales ($1,250.00), <strong>Millares</strong> agrega el separador de miles, <strong>Porcentaje</strong> multiplica por 100 y agrega el símbolo %, <strong>Fecha</strong> muestra un día en el formato dd/mm/aaaa y hay más opciones en el menú desplegable de la misma lista.</p>
+<h2 class="seccion" id="s-3-la-idea-central-valor-real-vs-formato-visual" tabindex="-1">3. La idea central: valor real vs. formato visual</h2>
+<p>Excel guarda un valor y el formato solo cambia cómo se ve. La celda puede guardar <strong>0.16</strong> y mostrar <strong>16%</strong>; puede guardar <strong>1250</strong> y mostrar <strong>$1,250.00</strong>. El formato NO cambia el valor con el que Excel calcula: la barra de fórmulas siempre muestra el valor real de la celda activa.</p>
+<h2 class="seccion" id="s-4-la-formula-t-a-r-f-para-instruir-a-la-ia" tabindex="-1">4. La fórmula T-A-R-F para instruir a la IA</h2>
+<p>Para que la IA responda bien, pídele con estructura. La fórmula T-A-R-F tiene cuatro partes: <strong>Tarea</strong> (qué quieres lograr), <strong>Audiencia</strong> (para quién es la respuesta), <strong>Rol</strong> (qué papel toma la IA) y <strong>Formato</strong> (cómo quieres la respuesta: fórmula, tabla, lista de pasos). Ejemplo: Tarea: quiero una fórmula que sume una columna de gastos. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que explica con pasos sencillos. Formato: la fórmula como texto y una explicación breve.</p>
+<h2 class="seccion" id="s-5-prompt-deficiente-vs-prompt-t-a-r-f" tabindex="-1">5. Prompt deficiente vs. prompt T-A-R-F</h2>
+<p>“Hazme una fórmula” es una orden vaga: la IA no sabe qué calcular ni para quién. El mismo pedido con T-A-R-F describe la tarea, la audiencia, el rol y el formato, y la respuesta sale más precisa. Compara los dos en la caja de IA de esta guía: lo que cambia no es la herramienta, sino la claridad del pedido.</p>
+<h2 class="seccion" id="s-6-fichas-de-formatos-y-de-la-formula-t-a-r-f" tabindex="-1">6. Fichas de formatos y de la fórmula T-A-R-F</h2>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Formato Moneda</code><span class="ficha-guion">—</span><span class="ficha-quehace">Muestra la cantidad como pesos con dos decimales y el símbolo $.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Inicio &gt; Número &gt; Formato de número: Moneda</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">2850 se ve como $2,850.00 y sigue guardando 2850.</code></li><li><code class="mono">1250 se ve como $1,250.00.</code></li><li><code class="mono">El símbolo y los decimales no cambian el valor de la celda.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para reportes de costos, precios e importes en pesos.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Formato Millares</code><span class="ficha-guion">—</span><span class="ficha-quehace">Agrega el separador de miles y, si quieres, decimales.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Inicio &gt; Número &gt; separador de millares</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">1250000 se ve como 1,250,000.</code></li><li><code class="mono">1250 se ve como 1,250.</code></li><li><code class="mono">El formato no altera la cantidad guardada.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para leer cantidades grandes sin contar ceros.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Formato Porcentaje</code><span class="ficha-guion">—</span><span class="ficha-quehace">Multiplica el valor por 100 y agrega el símbolo %.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Inicio &gt; Número &gt; Porcentaje</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">0.16 se ve como 16%.</code></li><li><code class="mono">0.05 se ve como 5%.</code></li><li><code class="mono">Excel calcula con 0.16 aunque la celda muestre 16%.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para tasas, descuentos e impuestos expresados como porcentaje.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Formato Fecha</code><span class="ficha-guion">—</span><span class="ficha-quehace">Muestra un día como fecha legible en dd/mm/aaaa.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Inicio &gt; Número &gt; Fecha</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">46056 se ve como 03/02/2026.</code></li><li><code class="mono">El valor guardado sigue siendo el número de serie 46056.</code></li><li><code class="mono">Hay formatos de fecha larga, con el día de la semana y el mes con nombre.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para que un día se lea como fecha y no como número.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Alineación y ajustar texto</code><span class="ficha-guion">—</span><span class="ficha-quehace">Acomoda el contenido dentro de la celda y reparte el texto largo en varias líneas.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Inicio &gt; Alineación</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Centrar el título de una columna sobre sus datos.</code></li><li><code class="mono">Alinear a la derecha los importes para compararlos.</code></li><li><code class="mono">Ajustar texto evita que un nombre largo se corte.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para reportes legibles con títulos centrados y textos completos.</p>
+</article>
+<article class="ficha">
+<h3 class="ficha-nombre"><code class="mono">Fórmula T-A-R-F</code><span class="ficha-guion">—</span><span class="ficha-quehace">Estructura de prompt con Tarea, Audiencia, Rol y Formato.</span></h3>
+<p class="ficha-linea"><span class="ficha-rotulo">Sintaxis:</span> <code class="mono">Tarea + Audiencia + Rol + Formato</code></p>
+<p class="ficha-linea"><span class="ficha-rotulo">Ejemplos:</span></p><ul class="ficha-ejemplos"><li><code class="mono">Tarea: calcula el IVA de un precio. Audiencia: oficinista inicial. Rol: tutor de Excel. Formato: fórmula y ejemplo.</code></li><li><code class="mono">Tarea: ordena una lista. Audiencia: principiante. Rol: instructor. Formato: pasos.</code></li><li><code class="mono">Tarea: resume ventas. Audiencia: gerente. Rol: analista. Formato: tabla breve.</code></li></ul>
+<p class="ficha-linea"><span class="ficha-rotulo">Cuándo:</span> Para pedirle a la IA respuestas útiles y verificables.</p>
+</article>
+<h2 class="seccion" id="s-7-ejemplo-resuelto-dar-formato-al-inventario" tabindex="-1">7. Ejemplo resuelto: dar formato al inventario</h2>
+<p>Toma el inventario del Tema 1 y agrega su costo unitario. La minihoja de abajo muestra la misma información de dos formas: sin formato y con formato, para que veas que el valor no cambia. La serie <strong>46056</strong> corresponde al 03/02/2026 en el sistema de fechas de Excel: aparece solo para explicar el valor real, no es una fecha que se capture. Para que la tabla se lea con holgura en pantalla, se muestra en dos recortes con las letras reales de la hoja y la misma numeración de filas: primero A–D y después E–F.</p>
+<ul class="leyenda"><li><span class="muestra" style="background:#F5E9DC"></span><span>Celda beige: aquí escribes tú el dato conocido.</span></li><li><span class="muestra" style="background:#E4E1DC"></span><span>Celda gris: la completa Excel; tú no la escribes.</span></li></ul>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">A</th><th scope="col" class="cab-col">B</th><th scope="col" class="cab-col">C</th><th scope="col" class="cab-col">D</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Código</strong></td><td class="celda cab-dato"><strong>Artículo</strong></td><td class="celda cab-dato"><strong>Costo unitario sin formato</strong></td><td class="celda cab-dato"><strong>Costo unitario con formato</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>P-001</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Silla ejecutiva</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>2850</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$2,850.00</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>P-002</td><td class="celda captura col-izq"><span class="sr-only">Celda de captura, la escribes tú. </span>Escritorio</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>4150</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>$4,150.00</td></tr></tbody></table></div>
+<div class="rejilla-envoltura" tabindex="0" role="region" aria-label="Vista de hoja de cálculo. Se puede desplazar de lado."><table class="rejilla"><thead><tr><th scope="col" class="esquina" aria-hidden="true"></th><th scope="col" class="cab-col">E</th><th scope="col" class="cab-col">F</th></tr></thead><tbody><tr><th scope="row" class="cab-fila">1</th><td class="celda cab-dato"><strong>Fecha sin formato</strong></td><td class="celda cab-dato"><strong>Fecha con formato</strong></td></tr><tr><th scope="row" class="cab-fila">2</th><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>46056</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>03/02/2026</td></tr><tr><th scope="row" class="cab-fila">3</th><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>46056</td><td class="celda captura col-der"><span class="sr-only">Celda de captura, la escribes tú. </span>03/02/2026</td></tr></tbody></table></div>
+<p>Aplicar formato no cambia <strong>2850</strong>, <strong>4150</strong> ni <strong>46056</strong>: solo cambia cómo se ven. En el archivo de práctica, la hoja <strong>Inventario_Practica</strong> debe mostrar el mismo número al quitar el formato de fecha: es la prueba de que la fecha entró como fecha y no como texto. En ambos recortes, las filas 2 y 3 son los mismos registros P-001 y P-002.</p>
+<aside class="aviso aviso--exito" role="note"><p><span class="aviso-etiqueta">Comprobación.</span> Aplica formato Moneda o Fecha a una celda y confirma que el valor de la barra de fórmulas no cambia: 2850 sigue siendo 2850 y 46056 sigue siendo 46056. Ese valor real es con el que Excel calcula.</p></aside>
+<aside class="aviso aviso--info" role="note"><p><span class="aviso-etiqueta">Con ayuda de la IA (T-A-R-F).</span> Prompt vago: &quot;hazme una fórmula&quot;. Prompt T-A-R-F: &quot;Tarea: calcula el precio con IVA de un artículo de inventario. Audiencia: personal de oficina que inicia con Excel. Rol: apoyo experto en Excel que explica con pasos sencillos. Formato: la fórmula como texto, un ejemplo con datos ficticios y el resultado esperado. Antes de usar la respuesta, verifica que la fórmula coincida con lo que tu hoja necesita y que el resultado tenga sentido.&quot;</p></aside>
+<aside class="aviso aviso--alerta" role="note"><p><span class="aviso-etiqueta">Advertencia.</span> El formato es maquillaje: no cambia el valor con el que Excel calcula. Cuando la IA proponga una fórmula o un formato, verifica siempre el resultado antes de usarlo y practica solo con datos ficticios.</p></aside>
+<div class="tabla-envoltura"><table class="tabla-conceptos"><thead><tr><th scope="col" class="col-izq">Formato</th><th scope="col" class="col-izq">Cómo se ve</th><th scope="col" class="col-der">Valor real que guarda Excel</th></tr></thead><tbody><tr><td class="col-izq" data-rotulo="Formato">Moneda</td><td class="col-izq" data-rotulo="Cómo se ve">$2,850.00</td><td class="col-der" data-rotulo="Valor real que guarda Excel">2850</td></tr><tr><td class="col-izq" data-rotulo="Formato">Porcentaje</td><td class="col-izq" data-rotulo="Cómo se ve">16%</td><td class="col-der" data-rotulo="Valor real que guarda Excel">0.16</td></tr><tr><td class="col-izq" data-rotulo="Formato">Fecha larga</td><td class="col-izq" data-rotulo="Cómo se ve">martes, 3 de febrero de 2026</td><td class="col-der" data-rotulo="Valor real que guarda Excel">46056</td></tr></tbody></table></div>
+<section class="puntos-clave" id="s-puntos-clave" tabindex="-1"><h2>Puntos clave</h2><ul><li>El formato es maquillaje: cambia cómo se ve, no el valor de la celda.</li><li>16% por dentro es 0.16; $2,850.00 por dentro es 2850.</li><li>Una fecha es un número de serie con formato de fecha.</li><li>Un buen prompt T-A-R-F da mejores respuestas que una orden vaga.</li></ul></section>
+<section class="referencias" id="s-referencias" tabindex="-1"><h2>Referencias</h2><ul><li>Microsoft. (2025). Dar formato a números como moneda. Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/dar-formato-a-n%C3%BAmeros-como-moneda-8ac490bf-3428-46a5-8fb6-06a8ff785fe4</li><li>Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li>OpenAI. (2025). ChatGPT [Modelo de lenguaje grande]. https://chat.openai.com</li></ul></section>
+</main>
+</div>
+<footer class="pie">Excel Básico con Inteligencia Artificial · Datos ficticios para práctica.</footer>
+<script>
+(function () {
+  var raiz = document.documentElement;
+  var escala = 1;
+
+  function aplicarEscala() {
+    raiz.style.setProperty('--escala', escala);
+  }
+  var bMas = document.getElementById('texto-mas');
+  var bMenos = document.getElementById('texto-menos');
+  var bTema = document.getElementById('cambiar-tema');
+
+  if (bMas) bMas.addEventListener('click', function () {
+    escala = Math.min(1.5, escala + 0.1); aplicarEscala();
+  });
+  if (bMenos) bMenos.addEventListener('click', function () {
+    escala = Math.max(0.85, escala - 0.1); aplicarEscala();
+  });
+  if (bTema) bTema.addEventListener('click', function () {
+    var oscuro = raiz.getAttribute('data-tema') === 'oscuro';
+    raiz.setAttribute('data-tema', oscuro ? 'claro' : 'oscuro');
+    bTema.setAttribute('aria-pressed', String(!oscuro));
+    bTema.textContent = oscuro ? 'Modo oscuro' : 'Modo claro';
+  });
+
+  // Resalta en el índice la sección visible.
+  var enlaces = Array.prototype.slice.call(
+    document.querySelectorAll('.indice a')
+  );
+  var destinos = enlaces
+    .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+    .filter(Boolean);
+
+  if ('IntersectionObserver' in window && destinos.length) {
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        enlaces.forEach(function (a) {
+          a.classList.toggle(
+            'activo', a.getAttribute('href') === '#' + e.target.id
+          );
+        });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    destinos.forEach(function (d) { obs.observe(d); });
+  }
+})();
+</script>
+</body>
+</html>
