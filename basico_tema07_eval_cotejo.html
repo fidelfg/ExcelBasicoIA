@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Lista de cotejo de la práctica del Tema 7. Excel Básico con Inteligencia Artificial.">
+  <title>Lista de cotejo de la práctica del Tema 7 — Excel Básico con Inteligencia Artificial</title>
+  <style>
+    :root { --tinta:#25302c; --verde:#2e5940; --verde-claro:#d9eadf; --naranja:#854209;
+      --acento:#d66a0f; --papel:#fff; --fondo:#eceeed; --ficha:#faf7f2;
+      --borde:#c6c0b7; --suave:#616b67; --foco:#0b66c3; }
+    * { box-sizing:border-box; }
+    html { color-scheme:light; scroll-behavior:smooth; }
+    body { margin:0; background:var(--fondo); color:var(--tinta); font-family:Arial,Helvetica,sans-serif;
+      font-size:16px; line-height:1.5; overflow-wrap:anywhere; }
+    .salto { position:absolute; left:-9999px; top:0; }
+    .salto:focus { left:1rem; top:1rem; z-index:20; background:#fff; padding:.75rem 1rem; border:3px solid var(--foco); }
+    header { background:linear-gradient(135deg,#173a2a,var(--verde)); color:#fff; padding:clamp(1.5rem,5vw,3.5rem) 1rem; }
+    header .interior, main, footer { width:min(1120px,calc(100% - 2rem)); margin:auto; }
+    .etiqueta-superior { margin:0 0 .5rem; color:#f8dbbe; font-size:.83rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+    h1 { margin:0; max-width:780px; font-size:clamp(2rem,6vw,3.25rem); line-height:1.08; }
+    .curso { margin:.8rem 0 0; font-size:1.1rem; color:#edf7f0; } .total { font-weight:700; color:#fff; }
+    main { padding:1.5rem 0 3rem; }
+    .tarjeta,.seccion { background:var(--papel); border:1px solid var(--borde); border-radius:14px; margin:0 0 1.25rem; padding:clamp(1rem,3vw,1.5rem); box-shadow:0 5px 18px rgba(25,39,33,.07); }
+    h2 { margin:0 0 1rem; color:var(--verde); font-size:clamp(1.35rem,3vw,1.7rem); border-bottom:3px solid var(--acento); padding-bottom:.45rem; }
+    table { width:100%; border-collapse:collapse; } th,td { border:1px solid var(--borde); padding:.65rem; text-align:left; } th { width:38%; background:var(--ficha); overflow-wrap:normal; word-break:normal; }
+    .identificacion { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+    .campo { display:flex; flex-direction:column; gap:.4rem; } .campo-fijo { background:var(--ficha); border-left:5px solid var(--acento); padding:.8rem; }
+    label,.etiqueta,legend { font-weight:700; }
+    input[type=text],input[type=date],textarea { width:100%; min-height:46px; border:2px solid var(--borde); border-radius:8px; padding:.7rem; font:inherit; color:inherit; background:#fff; }
+    textarea { resize:vertical; min-height:135px; }
+    input:focus-visible,textarea:focus-visible,input[type=radio]:focus-visible + label { outline:4px solid rgba(11,102,195,.58); outline-offset:3px; border-color:var(--foco); }
+    .estado { display:inline-block; font-size:.76rem; font-weight:700; border-radius:999px; padding:.12rem .45rem; vertical-align:.12rem; }
+    .requerido { background:#f6e0dc; color:#7d241d; } .opcional { background:#eceeed; color:#414946; }
+    .encuadre { border-left:8px solid var(--acento); } .encuadre p { margin:.35rem 0; } .instruccion { font-weight:700; color:var(--naranja); }
+    .cabecera-escala { display:grid; grid-template-columns:repeat(var(--columnas),minmax(0,1fr)); gap:.45rem; margin:.5rem 0 1rem; font-size:.82rem; color:var(--suave); }
+    .cabecera-escala span { text-align:center; }
+    .reactivo { border:0; border-top:1px solid var(--borde); margin:0; padding:1rem 0; min-width:0; }
+    .reactivo legend { width:100%; padding:0 0 .65rem; } .numero { color:var(--naranja); }
+    .opciones { display:grid; grid-template-columns:repeat(auto-fit,minmax(52px,1fr)); gap:.5rem; }
+    .opciones-lista { grid-template-columns:1fr; }
+    .opcion { position:relative; min-width:0; } .opcion input { position:absolute; opacity:0; width:1px; height:1px; }
+    .opcion label { display:grid; place-items:center; min-height:52px; border:2px solid var(--borde); border-radius:10px; background:var(--ficha); cursor:pointer; padding:.35rem; }
+    .opciones-lista .opcion label { display:flex; justify-content:flex-start; gap:.65rem; }
+    .opcion input:checked + label { border-color:var(--verde); background:var(--verde-claro); color:#173a2a; box-shadow:inset 0 0 0 2px #fff; }
+    .valor { font-size:1.1rem; } .comentario { margin:0 0 1.25rem; } .comentario label { display:block; margin-bottom:.5rem; }
+    .sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
+    .referencias li { margin-bottom:.75rem; } footer { padding:1.25rem 0 2rem; color:var(--suave); font-size:.88rem; }
+    @media (max-width:700px) { .identificacion { grid-template-columns:1fr; } .cabecera-escala { display:none; } .opciones { gap:.35rem; } .tarjeta,.seccion { border-radius:10px; padding:1rem; } .tarjeta table th { width:48%; } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+    @media print { body { background:#fff; font-size:10pt; } header { padding:1rem; } .tarjeta,.seccion { box-shadow:none; break-inside:avoid; } .salto { display:none; } }
+  </style>
+</head>
+<body data-eval-prefix="basico" data-scoring-mode="none">
+  <a class="salto" href="#contenido">Saltar al contenido</a>
+  <header><div class="interior"><p class="etiqueta-superior">EVAL · EC0301 · EC0366</p>
+    <h1>Lista de cotejo de la práctica del Tema 7</h1><p class="curso">Excel Básico con Inteligencia Artificial</p></div></header>
+  <main id="contenido">
+    <section class="tarjeta" aria-labelledby="titulo-ficha"><h2 id="titulo-ficha">Ficha técnica</h2><table><tbody><tr><th scope="row">Tipo</th><td>Formativa</td></tr><tr><th scope="row">Momento</th><td>Durante</td></tr><tr><th scope="row">Alcance</th><td>Conocimientos y desempeños</td></tr><tr><th scope="row">Técnica</th><td>De campo</td></tr><tr><th scope="row">Instrumento</th><td>Lista de cotejo</td></tr></tbody></table></section>
+    <section class="tarjeta" aria-labelledby="titulo-identificacion"><h2 id="titulo-identificacion">Datos de identificación</h2><div class="identificacion"><div class="campo campo-fijo"><span class="etiqueta">Nombre del curso</span><strong>Excel Básico con Inteligencia Artificial</strong></div><div class="campo"><label for="participant_name">Nombre de la persona participante <span class="estado requerido">Obligatorio</span></label><input id="participant_name" name="participant_name" type="text" required></div><div class="campo"><label for="participant_email">Correo de la persona participante <span class="estado requerido">Obligatorio</span></label><input id="participant_email" name="participant_email" type="text" required></div><div class="campo"><label for="application_date">Fecha de aplicación <span class="estado requerido">Obligatorio</span></label><input id="application_date" name="application_date" type="date" required></div></div></section>
+    <section class="tarjeta encuadre" data-eval-framing="true" aria-label="Encuadre e instrucciones"><p>Esta revisión comprueba evidencias observables del libro de práctica del Tema 7; no asigna calificación.</p><p class="instruccion">Abre el libro maestro y marca Logrado o No logrado según la evidencia visible en el XLSX.</p></section>
+    <form method="get"><section class="seccion" id="theme07_observable_evidence"><h2>Evidencias observables del XLSX</h2><fieldset class="reactivo" id="bloque_criterion_sort"><legend><span class="numero">1.</span> Comprueba en 7.1 el orden simple por Apellido_Paterno y el orden multinivel. <span class="estado requerido">Obligatorio</span></legend><div class="opciones opciones-lista" role="radiogroup" aria-label="Opciones para: Comprueba en 7.1 el orden simple por Apellido_Paterno y el orden multinivel."><div class="opcion"><input type="radio" id="criterion_sort_logrado" name="criterion_sort" value="logrado" required aria-label="Logrado"><label for="criterion_sort_logrado"><span class="valor">Logrado</span></label></div><div class="opcion"><input type="radio" id="criterion_sort_no_logrado" name="criterion_sort" value="no_logrado" required aria-label="No logrado"><label for="criterion_sort_no_logrado"><span class="valor">No logrado</span></label></div></div></fieldset><fieldset class="reactivo" id="bloque_criterion_filter"><legend><span class="numero">2.</span> Comprueba en 7.2 el filtro numérico de salarios mayores a $15,000. <span class="estado requerido">Obligatorio</span></legend><div class="opciones opciones-lista" role="radiogroup" aria-label="Opciones para: Comprueba en 7.2 el filtro numérico de salarios mayores a $15,000."><div class="opcion"><input type="radio" id="criterion_filter_logrado" name="criterion_filter" value="logrado" required aria-label="Logrado"><label for="criterion_filter_logrado"><span class="valor">Logrado</span></label></div><div class="opcion"><input type="radio" id="criterion_filter_no_logrado" name="criterion_filter" value="no_logrado" required aria-label="No logrado"><label for="criterion_filter_no_logrado"><span class="valor">No logrado</span></label></div></div></fieldset><fieldset class="reactivo" id="bloque_criterion_remove_duplicates"><legend><span class="numero">3.</span> Comprueba en 7.3 la eliminación de 6 duplicados quedando 50 registros. <span class="estado requerido">Obligatorio</span></legend><div class="opciones opciones-lista" role="radiogroup" aria-label="Opciones para: Comprueba en 7.3 la eliminación de 6 duplicados quedando 50 registros."><div class="opcion"><input type="radio" id="criterion_remove_duplicates_logrado" name="criterion_remove_duplicates" value="logrado" required aria-label="Logrado"><label for="criterion_remove_duplicates_logrado"><span class="valor">Logrado</span></label></div><div class="opcion"><input type="radio" id="criterion_remove_duplicates_no_logrado" name="criterion_remove_duplicates" value="no_logrado" required aria-label="No logrado"><label for="criterion_remove_duplicates_no_logrado"><span class="valor">No logrado</span></label></div></div></fieldset><fieldset class="reactivo" id="bloque_criterion_ai_filter_criteria"><legend><span class="numero">4.</span> Comprueba en 7.4 el prompt T-A-R-F con desglose de criterios de filtro. <span class="estado requerido">Obligatorio</span></legend><div class="opciones opciones-lista" role="radiogroup" aria-label="Opciones para: Comprueba en 7.4 el prompt T-A-R-F con desglose de criterios de filtro."><div class="opcion"><input type="radio" id="criterion_ai_filter_criteria_logrado" name="criterion_ai_filter_criteria" value="logrado" required aria-label="Logrado"><label for="criterion_ai_filter_criteria_logrado"><span class="valor">Logrado</span></label></div><div class="opcion"><input type="radio" id="criterion_ai_filter_criteria_no_logrado" name="criterion_ai_filter_criteria" value="no_logrado" required aria-label="No logrado"><label for="criterion_ai_filter_criteria_no_logrado"><span class="valor">No logrado</span></label></div></div></fieldset></section></form>
+<section class="seccion referencias" data-eval-references="true"><h2>Referencias</h2><ul><li data-reference-id="F1_CORE_EXCEL_FUNCTIONS">Microsoft. (2025). Funciones de Excel (por categoría). Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/funciones-de-excel-por-categor%C3%ADa-5f91f4e9-7b42-46d2-9bd1-63f26a86c0eb</li><li data-reference-id="F2_T07_SORT_DATA">Microsoft. (2025). Ordenar datos en un rango o tabla. Soporte técnico de Microsoft. https://support.microsoft.com/es-es/office/ordenar-datos-en-un-rango-o-tabla-62d0b95d-2a90-4610-a6ae-2e545c4a4654</li></ul></section>
+  </main>
+  <footer>Excel Básico con Inteligencia Artificial · Lista de cotejo de la práctica del Tema 7</footer>
+</body>
+</html>
